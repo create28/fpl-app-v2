@@ -311,17 +311,30 @@ function displayAwardsHistory(awardType) {
         return;
     }
 
+    // Count wins for each manager
+    const winCounts = {};
+    allAwards.forEach(award => {
+        const key = `${award.manager_name} (${award.team_name})`;
+        winCounts[key] = (winCounts[key] || 0) + 1;
+    });
+
     // Sort by gameweek (descending)
     allAwards.sort((a, b) => b.gameweek - a.gameweek);
 
-    const historyHTML = allAwards.map(award => `
-        <div class="award-history-item">
-            <h3>Gameweek ${award.gameweek}</h3>
-            <p class="team-name">${award.team_name}</p>
-            <p class="manager-name">${award.manager_name}</p>
-            <p class="points">${award.points} points</p>
-        </div>
-    `).join('');
+    const historyHTML = allAwards.map(award => {
+        const key = `${award.manager_name} (${award.team_name})`;
+        const winCount = winCounts[key];
+        const winBadge = winCount > 1 ? `<span class="win-badge">${winCount}×</span>` : '';
+        
+        return `
+            <div class="award-history-item">
+                <h3>Gameweek ${award.gameweek}</h3>
+                <p class="team-name">${award.team_name}</p>
+                <p class="manager-name">${award.manager_name} ${winBadge}</p>
+                <p class="points">${award.points} points</p>
+            </div>
+        `;
+    }).join('');
 
     historyContent.innerHTML = historyHTML;
 }
