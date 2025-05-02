@@ -179,22 +179,29 @@ document.addEventListener('DOMContentLoaded', function() {
 let allGameweekData = {};
 
 function loadAllGameweekData() {
-    fetch('/api/all-data')
+    // First get the current gameweek
+    fetch('/api/current-gameweek')
         .then(response => response.json())
         .then(data => {
-            allGameweekData = data;
-            // Display latest gameweek by default
-            const latestGameweek = Math.max(...Object.keys(data).map(Number));
-            document.getElementById('gameweekSelect').value = latestGameweek;
-            displayGameweekData(latestGameweek);
+            const currentGameweek = data.current_gameweek;
             
-            // Initialize awards history with the first tab
-            const firstTab = document.querySelector('.tab-button.active');
-            if (firstTab) {
-                displayAwardsHistory(firstTab.dataset.award);
-            }
+            // Then load all gameweek data
+            return fetch('/api/all-data')
+                .then(response => response.json())
+                .then(allData => {
+                    allGameweekData = allData;
+                    // Set current gameweek as default selection
+                    document.getElementById('gameweekSelect').value = currentGameweek;
+                    displayGameweekData(currentGameweek);
+                    
+                    // Initialize awards history with the first tab
+                    const firstTab = document.querySelector('.tab-button.active');
+                    if (firstTab) {
+                        displayAwardsHistory(firstTab.dataset.award);
+                    }
+                });
         })
-        .catch(error => console.error('Error loading all gameweek data:', error));
+        .catch(error => console.error('Error loading gameweek data:', error));
 }
 
 function displayGameweekData(gameweek) {

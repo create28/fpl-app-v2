@@ -403,6 +403,12 @@ def preload_data():
     print("Data preloading complete!")
 
 class FPLHandler(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        """Handle HEAD requests."""
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
     def do_GET(self):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
@@ -430,6 +436,14 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.end_headers()
             with open('script.js', 'rb') as f:
                 self.wfile.write(f.read())
+        
+        elif path == '/api/current-gameweek':
+            # Return current gameweek
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            current_gw = fetch_current_gameweek()
+            self.wfile.write(json.dumps({'current_gameweek': current_gw}).encode())
         
         elif path == '/api/gameweeks':
             # Return list of available gameweeks
