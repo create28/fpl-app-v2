@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: fpl-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python fetch_fpl_data.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0 

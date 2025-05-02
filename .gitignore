@@ -1,0 +1,5 @@
+cache/
+logs/
+fpl_history.db
+__pycache__/
+*.pyc
