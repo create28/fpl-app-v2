@@ -383,24 +383,38 @@ def fetch_current_gameweek():
         return 1
 
 def preload_data():
-    """Preload data for all gameweeks up to the current one."""
+    """Preload data for current gameweek only."""
     print("Preloading FPL data...")
     current_gw = fetch_current_gameweek()
     print(f"Current gameweek: {current_gw}")
     
-    for gameweek in range(1, current_gw + 1):
-        print(f"Loading gameweek {gameweek}...")
-        try:
-            data = get_fpl_data(gameweek)
-            if data:
-                print(f"Successfully loaded gameweek {gameweek}")
-            else:
-                print(f"Failed to load gameweek {gameweek}")
-            time.sleep(1)  # Add delay to avoid rate limiting
-        except Exception as e:
-            print(f"Error loading gameweek {gameweek}: {e}")
+    try:
+        data = get_fpl_data(current_gw)
+        if data:
+            print(f"Successfully loaded gameweek {current_gw}")
+        else:
+            print(f"Failed to load gameweek {current_gw}")
+    except Exception as e:
+        print(f"Error loading gameweek {current_gw}: {e}")
     
     print("Data preloading complete!")
+
+def get_latest_valid_gameweek():
+    """Find the latest gameweek that has valid data (not all zeros)."""
+    current_gw = fetch_current_gameweek()
+    
+    # Try current gameweek first
+    data = get_fpl_data(current_gw)
+    if data and any(team['gw_points'] > 0 for team in data['standings']):
+        return current_gw
+    
+    # If current gameweek has no data, check previous gameweeks
+    for gameweek in range(current_gw - 1, 0, -1):
+        data = get_fpl_data(gameweek)
+        if data and any(team['gw_points'] > 0 for team in data['standings']):
+            return gameweek
+    
+    return 1  # Default to gameweek 1 if no valid data found
 
 class FPLHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -438,12 +452,12 @@ class FPLHandler(BaseHTTPRequestHandler):
                 self.wfile.write(f.read())
         
         elif path == '/api/current-gameweek':
-            # Return current gameweek
+            # Return latest gameweek with valid data
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            current_gw = fetch_current_gameweek()
-            self.wfile.write(json.dumps({'current_gameweek': current_gw}).encode())
+            latest_gw = get_latest_valid_gameweek()
+            self.wfile.write(json.dumps({'current_gameweek': latest_gw}).encode())
         
         elif path == '/api/gameweeks':
             # Return list of available gameweeks
@@ -490,7 +504,7 @@ def run_server():
     # Create cache directory if it doesn't exist
     os.makedirs('cache', exist_ok=True)
     
-    # Preload data
+    # Preload only current gameweek data
     preload_data()
     
     server_address = ('', 8000)
