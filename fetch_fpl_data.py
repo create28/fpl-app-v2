@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, urlparse
 import sqlite3
 import time
 from datetime import datetime, timedelta
+import sys
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -382,39 +383,51 @@ def fetch_current_gameweek():
         print(f"Error fetching current gameweek: {e}")
         return 1
 
-def preload_data():
-    """Preload data for current gameweek only."""
-    print("Preloading FPL data...")
-    current_gw = fetch_current_gameweek()
-    print(f"Current gameweek: {current_gw}")
-    
-    try:
-        data = get_fpl_data(current_gw)
-        if data:
-            print(f"Successfully loaded gameweek {current_gw}")
-        else:
-            print(f"Failed to load gameweek {current_gw}")
-    except Exception as e:
-        print(f"Error loading gameweek {current_gw}: {e}")
-    
-    print("Data preloading complete!")
-
 def get_latest_valid_gameweek():
     """Find the latest gameweek that has valid data (not all zeros)."""
-    current_gw = fetch_current_gameweek()
+    try:
+        # First try to get the current gameweek from FPL API
+        current_gw = fetch_current_gameweek()
+        print(f"Current gameweek from API: {current_gw}")
+        
+        # Start from the current gameweek and work backwards
+        for gameweek in range(current_gw, 0, -1):
+            print(f"Checking gameweek {gameweek}")
+            data = get_fpl_data(gameweek)
+            
+            # Check if we have valid data with points
+            if data and data.get('standings'):
+                # Check if any team has points in this gameweek
+                if any(team.get('gw_points', 0) > 0 for team in data['standings']):
+                    print(f"Found valid data in gameweek {gameweek}")
+                    return gameweek
+                else:
+                    print(f"Gameweek {gameweek} has no points data")
+            else:
+                print(f"No data found for gameweek {gameweek}")
+        
+        print("No valid data found in any gameweek")
+        return 1  # Default to gameweek 1 if no valid data found
+    except Exception as e:
+        print(f"Error in get_latest_valid_gameweek: {e}")
+        return 1  # Default to gameweek 1 on error
+
+def preload_data():
+    """Preload data for latest valid gameweek."""
+    print("Preloading FPL data...")
+    latest_gw = get_latest_valid_gameweek()
+    print(f"Latest valid gameweek: {latest_gw}")
     
-    # Try current gameweek first
-    data = get_fpl_data(current_gw)
-    if data and any(team['gw_points'] > 0 for team in data['standings']):
-        return current_gw
+    try:
+        data = get_fpl_data(latest_gw)
+        if data:
+            print(f"Successfully loaded gameweek {latest_gw}")
+        else:
+            print(f"Failed to load gameweek {latest_gw}")
+    except Exception as e:
+        print(f"Error loading gameweek {latest_gw}: {e}")
     
-    # If current gameweek has no data, check previous gameweeks
-    for gameweek in range(current_gw - 1, 0, -1):
-        data = get_fpl_data(gameweek)
-        if data and any(team['gw_points'] > 0 for team in data['standings']):
-            return gameweek
-    
-    return 1  # Default to gameweek 1 if no valid data found
+    print("Data preloading complete!")
 
 class FPLHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -497,20 +510,29 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not found")
 
 def run_server():
-    # Initialize database
-    print("Initializing database...")
-    init_db()
-    
-    # Create cache directory if it doesn't exist
-    os.makedirs('cache', exist_ok=True)
-    
-    # Preload only current gameweek data
-    preload_data()
-    
-    server_address = ('', 8000)
-    httpd = HTTPServer(server_address, FPLHandler)
-    print("Server running at http://localhost:8000")
-    httpd.serve_forever()
+    try:
+        # Initialize database
+        print("Initializing database...")
+        init_db()
+        
+        # Create cache directory if it doesn't exist
+        os.makedirs('cache', exist_ok=True)
+        
+        # Preload only current gameweek data
+        print("Preloading initial data...")
+        preload_data()
+        
+        server_address = ('', int(os.environ.get('PORT', 8000)))
+        httpd = HTTPServer(server_address, FPLHandler)
+        print(f"Server running on port {server_address[1]}")
+        httpd.serve_forever()
+    except Exception as e:
+        print(f"Error starting server: {e}")
+        raise
 
 if __name__ == "__main__":
-    run_server()
+    try:
+        run_server()
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
