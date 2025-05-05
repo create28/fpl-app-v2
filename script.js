@@ -138,68 +138,56 @@ function captureScreenshot() {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Populate gameweek dropdown
-    fetch('/api/gameweeks')
+    fetch('/api/current-gameweek')
         .then(response => response.json())
-        .then(gameweeks => {
-            const select = document.getElementById('gameweekSelect');
-            gameweeks.forEach(gw => {
-                const option = document.createElement('option');
-                option.value = gw;
-                option.textContent = `Gameweek ${gw}`;
-                select.appendChild(option);
-            });
+        .then(data => {
+            const currentGameweek = data.current_gameweek;
+            console.log('Current gameweek:', currentGameweek);
+            
+            // Get all available gameweeks
+            return fetch('/api/gameweeks')
+                .then(response => response.json())
+                .then(gameweeks => {
+                    const select = document.getElementById('gameweekSelect');
+                    gameweeks.forEach(gw => {
+                        const option = document.createElement('option');
+                        option.value = gw;
+                        option.textContent = `Gameweek ${gw}`;
+                        select.appendChild(option);
+                    });
+                    
+                    // Set current gameweek as default selection
+                    select.value = currentGameweek;
+                    console.log('Set default gameweek to:', currentGameweek);
+                    
+                    // Load all gameweek data
+                    return loadAllGameweekData();
+                });
         })
         .catch(error => console.error('Error loading gameweeks:', error));
-
-    // Load all gameweek data
-    loadAllGameweekData();
-
-    // Handle gameweek selection
-    document.getElementById('gameweekSelect').addEventListener('change', function(e) {
-        const gameweek = e.target.value;
-        if (gameweek) {
-            displayGameweekData(gameweek);
-        }
-    });
-
-    // Handle award type tabs
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            // Update active tab
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update displayed award type
-            const awardType = this.dataset.award;
-            displayAwardsHistory(awardType);
-        });
-    });
 });
 
 let allGameweekData = {};
 
 function loadAllGameweekData() {
-    // First get the current gameweek
-    fetch('/api/current-gameweek')
+    // Load all gameweek data
+    return fetch('/api/all-data')
         .then(response => response.json())
-        .then(data => {
-            const currentGameweek = data.current_gameweek;
+        .then(allData => {
+            allGameweekData = allData;
             
-            // Then load all gameweek data
-            return fetch('/api/all-data')
-                .then(response => response.json())
-                .then(allData => {
-                    allGameweekData = allData;
-                    // Set current gameweek as default selection
-                    document.getElementById('gameweekSelect').value = currentGameweek;
-                    displayGameweekData(currentGameweek);
-                    
-                    // Initialize awards history with the first tab
-                    const firstTab = document.querySelector('.tab-button.active');
-                    if (firstTab) {
-                        displayAwardsHistory(firstTab.dataset.award);
-                    }
-                });
+            // Get the current gameweek from the select element
+            const currentGameweek = document.getElementById('gameweekSelect').value;
+            console.log('Displaying data for gameweek:', currentGameweek);
+            
+            // Display the current gameweek data
+            displayGameweekData(currentGameweek);
+            
+            // Initialize awards history with the first tab
+            const firstTab = document.querySelector('.tab-button.active');
+            if (firstTab) {
+                displayAwardsHistory(firstTab.dataset.award);
+            }
         })
         .catch(error => console.error('Error loading gameweek data:', error));
 }

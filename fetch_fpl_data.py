@@ -378,11 +378,13 @@ def fetch_current_gameweek():
             events = data['events']
             for event in events:
                 if event['is_current']:
+                    print(f"Found current gameweek: {event['id']}")
                     return event['id']
-        return 1  # Default to gameweek 1 if current gameweek not found
+        print("No current gameweek found, defaulting to latest valid gameweek")
+        return get_latest_valid_gameweek()
     except Exception as e:
         print(f"Error fetching current gameweek: {e}")
-        return 1
+        return get_latest_valid_gameweek()
 
 def get_latest_valid_gameweek():
     """Find the latest gameweek that has valid data (not all zeros)."""
