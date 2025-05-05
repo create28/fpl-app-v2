@@ -192,6 +192,9 @@ document.addEventListener('DOMContentLoaded', function() {
             displayAwardsHistory(awardType);
         });
     });
+
+    // Screenshot button event
+    document.getElementById('screenshotBtn').addEventListener('click', captureScreenshot);
 });
 
 let allGameweekData = {};
@@ -294,7 +297,7 @@ function updateAwards(awards) {
         gameweekChampionCard.innerHTML = awards.gameweek_champion.map(champion => `
             <h3>${champion.team_name}</h3>
             <p>${champion.manager_name}</p>
-            <p class="points">${champion.points} points</p>
+            <p class="points">+${champion.points} points</p>
         `).join('<hr>');
     } else {
         gameweekChampionCard.innerHTML = '<p>No data available</p>';

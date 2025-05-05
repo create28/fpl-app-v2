@@ -22,68 +22,59 @@
       </select>
     </div>
 
-    <div class="table-container">
-      <table id="standingsTable">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Team Name</th>
-            <th>Manager</th>
-            <th>GW Points</th>
-            <th>Total Points</th>
-            <th>Team Value</th>
-            <th>Bank</th>
-            <th>Rank Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Data will be populated here -->
-        </tbody>
-      </table>
-    </div>
+    <!-- Wrap the table and awards in a capture area for screenshot -->
+    <div id="captureArea">
+        <div class="table-container">
+            <table id="standingsTable" class="league-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Team Name</th>
+                    <th>Manager</th>
+                    <th>GW Points</th>
+                    <th>Total Points</th>
+                    <th>Team Value</th>
+                    <th>Bank</th>
+                    <th>Rank Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="awards-section">
+            <h2>Gameweek Awards</h2>
+            <div class="awards-grid">
+                <div class="award-card">
+                    <h3>Weekly Champion</h3>
+                    <div class="award-content"></div>
+                </div>
+                <div class="award-card">
+                    <h3>Wooden Spoon</h3>
+                    <div class="award-content"></div>
+                </div>
+                <div class="award-card">
+                    <h3>Gameweek Champion</h3>
+                    <div class="award-content"></div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Awards Section -->
-    <div class="awards-section">
-        <h2>Gameweek Awards</h2>
-        <div class="awards-grid">
-            <div class="award-card">
-                <h3>Weekly Champion</h3>
-                <div class="award-content"></div>
+        <!-- Awards History Section -->
+        <div class="awards-history">
+            <h2>Awards History</h2>
+            <div class="awards-tabs">
+                <button class="tab-button active" data-award="weekly_champion">Weekly Champions</button>
+                <button class="tab-button" data-award="wooden_spoon">Wooden Spoons</button>
+                <button class="tab-button" data-award="gameweek_champion">Gameweek Champions</button>
             </div>
-            <div class="award-card">
-                <h3>Wooden Spoon</h3>
-                <div class="award-content"></div>
-            </div>
-            <div class="award-card">
-                <h3>Gameweek Champion</h3>
-                <div class="award-content"></div>
-            </div>
+            <div id="awardsHistoryContent" class="awards-history-content"></div>
         </div>
     </div>
 
-    <!-- Awards History Section -->
-    <div class="awards-history">
-        <h2>Awards History</h2>
-        <div class="awards-tabs">
-            <button class="tab-button active" data-award="weekly_champion">Weekly Champions</button>
-            <button class="tab-button" data-award="wooden_spoon">Wooden Spoons</button>
-            <button class="tab-button" data-award="gameweek_champion">Gameweek Champions</button>
-        </div>
-        <div id="awardsHistoryContent" class="awards-history-content"></div>
-    </div>
-  </div>
-
-  <!-- Separate Section for File Upload and Screenshot -->
-  <div class="controls">
-    <div class="file-upload">
-      <label for="previousCsvFile">Upload Previous Gameweek CSV:</label>
-      <input type="file" id="previousCsvFile" accept=".csv" />
-
-      <label for="currentCsvFile">Upload Current Gameweek CSV:</label>
-      <input type="file" id="currentCsvFile" accept=".csv" />
-    </div>
-
-    <button onclick="captureScreenshot()">Capture Screenshot</button>
+    <!-- Screenshot button near the table and awards -->
+    <button id="screenshotBtn">Download Screenshot</button>
   </div>
 
   <!-- Link to external JavaScript file -->
