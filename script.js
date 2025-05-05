@@ -125,9 +125,8 @@ tableBody.appendChild(tr);
 // Screenshot capture function
 function captureScreenshot() {
   const captureArea = document.getElementById("captureArea");
-
   html2canvas(captureArea, {
-    ignoreElements: element => element.tagName === 'BUTTON' || (element.tagName === 'INPUT' && element.type === 'file')
+    ignoreElements: element => element.tagName === 'BUTTON'
   }).then(canvas => {
     const link = document.createElement("a");
     link.href = canvas.toDataURL("image/png");
