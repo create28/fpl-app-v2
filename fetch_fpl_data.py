@@ -228,7 +228,6 @@ def calculate_gameweek_champion(gameweek, current_data, previous_data):
     
     # Filter out teams with 0 points in current gameweek
     valid_current_teams = [team for team in current_data if team['gw_points'] > 0]
-    
     if not valid_current_teams:
         return []
     
@@ -239,17 +238,24 @@ def calculate_gameweek_champion(gameweek, current_data, previous_data):
                 improvement = current_team['gw_points'] - previous_team['gw_points']
                 improvements.append((current_team, improvement))
                 break
-    
+
     if not improvements:
         return []
-    
-    max_improvement = max(imp[1] for imp in improvements)
-    champions = [imp[0] for imp in improvements if imp[1] == max_improvement]
-    
+
+    # Find the highest positive improvement, if any
+    positive_improvements = [imp[1] for imp in improvements if imp[1] > 0]
+    if positive_improvements:
+        max_improvement = max(positive_improvements)
+        champions = [imp for imp in improvements if imp[1] == max_improvement]
+    else:
+        # If no positive, use the highest (least negative or zero) improvement
+        max_improvement = max(imp[1] for imp in improvements)
+        champions = [imp for imp in improvements if imp[1] == max_improvement]
+
     return [{
-        'team_name': champ['team_name'],
-        'manager_name': champ['manager_name'],
-        'points': champ['gw_points']
+        'team_name': champ[0]['team_name'],
+        'manager_name': champ[0]['manager_name'],
+        'points': champ[1]  # This is the difference
     } for champ in champions]
 
 def save_data_to_json(data, filename):
