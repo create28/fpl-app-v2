@@ -11,6 +11,7 @@ import sqlite3
 import time
 from datetime import datetime, timedelta
 import sys
+import threading
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -429,6 +430,49 @@ def preload_data():
     
     print("Data preloading complete!")
 
+def is_game_active():
+    """Check if there's an active FPL gameweek."""
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', verify=False)
+        if response.status_code == 200:
+            data = response.json()
+            events = data['events']
+            for event in events:
+                if event['is_current']:
+                    # Check if the gameweek is active (has started but not finished)
+                    return event['is_current'] and not event['finished']
+        return False
+    except Exception as e:
+        print(f"Error checking game status: {e}")
+        return False
+
+def refresh_data_periodically():
+    """Periodically refresh FPL data with dynamic intervals."""
+    while True:
+        try:
+            print("Refreshing FPL data...")
+            current_gw = fetch_current_gameweek()
+            print(f"Current gameweek from API: {current_gw}")
+            
+            # Fetch data for current gameweek
+            data = get_fpl_data(current_gw)
+            if data:
+                print(f"Successfully refreshed gameweek {current_gw}")
+            else:
+                print(f"Failed to refresh gameweek {current_gw}")
+            
+            # Check if there's an active game
+            if is_game_active():
+                print("Game is active - refreshing in 15 minutes")
+                time.sleep(900)  # 15 minutes
+            else:
+                print("No active game - refreshing in 1 hour")
+                time.sleep(3600)  # 1 hour
+                
+        except Exception as e:
+            print(f"Error refreshing data: {e}")
+            time.sleep(300)  # Wait 5 minutes before retrying on error
+
 class FPLHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         """Handle HEAD requests."""
@@ -521,6 +565,10 @@ def run_server():
         # Preload only current gameweek data
         print("Preloading initial data...")
         preload_data()
+        
+        # Start the periodic refresh thread
+        refresh_thread = threading.Thread(target=refresh_data_periodically, daemon=True)
+        refresh_thread.start()
         
         server_address = ('', int(os.environ.get('PORT', 8000)))
         httpd = HTTPServer(server_address, FPLHandler)
