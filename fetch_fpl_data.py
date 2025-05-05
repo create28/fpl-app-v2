@@ -369,32 +369,11 @@ def get_fpl_data(gameweek):
 
     return result_data
 
-def fetch_current_gameweek():
-    """Fetch the current gameweek from the FPL API."""
-    try:
-        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', verify=False)
-        if response.status_code == 200:
-            data = response.json()
-            events = data['events']
-            for event in events:
-                if event['is_current']:
-                    print(f"Found current gameweek: {event['id']}")
-                    return event['id']
-        print("No current gameweek found, defaulting to latest valid gameweek")
-        return get_latest_valid_gameweek()
-    except Exception as e:
-        print(f"Error fetching current gameweek: {e}")
-        return get_latest_valid_gameweek()
-
 def get_latest_valid_gameweek():
     """Find the latest gameweek that has valid data (not all zeros)."""
     try:
-        # First try to get the current gameweek from FPL API
-        current_gw = fetch_current_gameweek()
-        print(f"Current gameweek from API: {current_gw}")
-        
-        # Start from the current gameweek and work backwards
-        for gameweek in range(current_gw, 0, -1):
+        # Start from gameweek 38 and work backwards
+        for gameweek in range(38, 0, -1):
             print(f"Checking gameweek {gameweek}")
             data = get_fpl_data(gameweek)
             
@@ -414,6 +393,10 @@ def get_latest_valid_gameweek():
     except Exception as e:
         print(f"Error in get_latest_valid_gameweek: {e}")
         return 1  # Default to gameweek 1 on error
+
+def fetch_current_gameweek():
+    """Get the latest gameweek with valid data."""
+    return get_latest_valid_gameweek()
 
 def preload_data():
     """Preload data for latest valid gameweek."""
@@ -453,8 +436,8 @@ def refresh_data_periodically():
     while True:
         try:
             print("Refreshing FPL data...")
-            current_gw = fetch_current_gameweek()
-            print(f"Current gameweek from API: {current_gw}")
+            current_gw = get_latest_valid_gameweek()
+            print(f"Latest valid gameweek: {current_gw}")
             
             # Fetch data for current gameweek
             data = get_fpl_data(current_gw)
