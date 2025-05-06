@@ -136,23 +136,30 @@ function captureScreenshot() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Fetch available gameweeks and populate dropdown
-  fetch('/api/gameweeks')
-    .then(response => response.json())
-    .then(gameweeks => {
-      const select = document.getElementById('gameweekSelect');
-      select.innerHTML = '';
-      gameweeks.forEach(gw => {
-        const option = document.createElement('option');
-        option.value = gw;
-        option.textContent = `Gameweek ${gw}`;
-        select.appendChild(option);
-      });
-      if (gameweeks.length > 0) {
-        select.value = gameweeks[gameweeks.length - 1];
-        displayGameweekData(select.value);
-      }
+  Promise.all([
+    fetch('/api/gameweeks').then(r => r.json()),
+    fetch('/api/current-gameweek').then(r => r.json())
+  ]).then(([gameweeks, currentGWObj]) => {
+    const select = document.getElementById('gameweekSelect');
+    select.innerHTML = '';
+    gameweeks.forEach(gw => {
+      const option = document.createElement('option');
+      option.value = gw;
+      option.textContent = `Gameweek ${gw}`;
+      select.appendChild(option);
     });
+    // Set to current gameweek
+    if (gameweeks.length > 0) {
+      select.value = currentGWObj.current_gameweek;
+    }
+    // Load all gameweek data for history, etc.
+    fetch('/api/all-data')
+      .then(response => response.json())
+      .then(allData => {
+        allGameweekData = allData;
+        displayGameweekData(select.value);
+      });
+  });
 
   // Handle gameweek selection
   document.getElementById('gameweekSelect').addEventListener('change', function(e) {

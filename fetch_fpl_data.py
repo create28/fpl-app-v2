@@ -514,14 +514,6 @@ class FPLHandler(BaseHTTPRequestHandler):
             with open('script.js', 'rb') as f:
                 self.wfile.write(f.read())
         
-        elif path == '/api/current-gameweek':
-            # Return latest gameweek with valid data
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            latest_gw = get_latest_valid_gameweek()
-            self.wfile.write(json.dumps({'current_gameweek': latest_gw}).encode())
-        
         elif path == '/api/gameweeks':
             # Return list of available gameweeks with data
             self.send_response(200)
@@ -529,6 +521,15 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.end_headers()
             gameweeks = get_available_gameweeks()
             self.wfile.write(json.dumps(gameweeks).encode())
+        
+        elif path == '/api/current-gameweek':
+            # Return the latest gameweek with data
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            gameweeks = get_available_gameweeks()
+            current_gw = gameweeks[-1] if gameweeks else 1
+            self.wfile.write(json.dumps({'current_gameweek': current_gw}).encode())
         
         elif path == '/api/all-data':
             # Return data for all gameweeks
