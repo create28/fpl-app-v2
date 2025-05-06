@@ -464,6 +464,21 @@ def refresh_data_periodically():
             print(f"Error refreshing data: {e}")
             time.sleep(300)  # Wait 5 minutes before retrying on error
 
+def force_refresh_all_gameweeks():
+    print('Forcing refresh for all gameweeks...')
+    for gw in range(1, 39):
+        print(f'Forcing refresh for gameweek {gw}')
+        get_fpl_data(gw)
+    print('Full refresh complete!')
+
+def get_available_gameweeks():
+    conn = sqlite3.connect('fpl_history.db')
+    c = conn.cursor()
+    c.execute('SELECT DISTINCT gameweek FROM fpl_data ORDER BY gameweek')
+    gameweeks = [row[0] for row in c.fetchall()]
+    conn.close()
+    return gameweeks
+
 class FPLHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         """Handle HEAD requests."""
@@ -508,11 +523,11 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'current_gameweek': latest_gw}).encode())
         
         elif path == '/api/gameweeks':
-            # Return list of available gameweeks
+            # Return list of available gameweeks with data
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            gameweeks = list(range(1, 39))  # 1-38
+            gameweeks = get_available_gameweeks()
             self.wfile.write(json.dumps(gameweeks).encode())
         
         elif path == '/api/all-data':
@@ -570,8 +585,11 @@ def run_server():
         raise
 
 if __name__ == "__main__":
-    try:
-        run_server()
-    except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
+    if len(sys.argv) > 1 and sys.argv[1] == 'fullrefresh':
+        force_refresh_all_gameweeks()
+    else:
+        try:
+            run_server()
+        except Exception as e:
+            print(f"Fatal error: {e}")
+            sys.exit(1)

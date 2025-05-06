@@ -136,64 +136,47 @@ function captureScreenshot() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // First get the latest valid gameweek
-    fetch('/api/current-gameweek')
-        .then(response => response.json())
-        .then(data => {
-            const latestGameweek = data.current_gameweek;
-            console.log('Latest valid gameweek:', latestGameweek);
-            
-            // Get all available gameweeks
-            return fetch('/api/gameweeks')
-                .then(response => response.json())
-                .then(gameweeks => {
-                    const select = document.getElementById('gameweekSelect');
-                    gameweeks.forEach(gw => {
-                        const option = document.createElement('option');
-                        option.value = gw;
-                        option.textContent = `Gameweek ${gw}`;
-                        select.appendChild(option);
-                    });
-                    
-                    // Set latest gameweek as default selection
-                    select.value = latestGameweek;
-                    console.log('Set default gameweek to:', latestGameweek);
-                    
-                    // Load all gameweek data
-                    return loadAllGameweekData();
-                });
-        })
-        .catch(error => {
-            console.error('Error loading gameweeks:', error);
-            // If there's an error, default to gameweek 1
-            const select = document.getElementById('gameweekSelect');
-            select.value = '1';
-            loadAllGameweekData();
-        });
-
-    // Handle gameweek selection
-    document.getElementById('gameweekSelect').addEventListener('change', function(e) {
-        const gameweek = e.target.value;
-        if (gameweek) {
-            displayGameweekData(gameweek);
-        }
+  // Fetch available gameweeks and populate dropdown
+  fetch('/api/gameweeks')
+    .then(response => response.json())
+    .then(gameweeks => {
+      const select = document.getElementById('gameweekSelect');
+      select.innerHTML = '';
+      gameweeks.forEach(gw => {
+        const option = document.createElement('option');
+        option.value = gw;
+        option.textContent = `Gameweek ${gw}`;
+        select.appendChild(option);
+      });
+      if (gameweeks.length > 0) {
+        select.value = gameweeks[gameweeks.length - 1];
+        displayGameweekData(select.value);
+      }
     });
 
-    // Handle award type tabs
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            // Update active tab
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update displayed award type
-            const awardType = this.dataset.award;
-            displayAwardsHistory(awardType);
-        });
-    });
+  // Handle gameweek selection
+  document.getElementById('gameweekSelect').addEventListener('change', function(e) {
+    const gameweek = e.target.value;
+    if (gameweek) {
+      displayGameweekData(gameweek);
+    }
+  });
 
-    // Screenshot button event
-    document.getElementById('screenshotBtn').addEventListener('click', captureScreenshot);
+  // Screenshot button event
+  document.getElementById('screenshotBtn').addEventListener('click', captureScreenshot);
+
+  // Handle award type tabs
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+      // Update active tab
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      this.classList.add('active');
+      
+      // Update displayed award type
+      const awardType = this.dataset.award;
+      displayAwardsHistory(awardType);
+    });
+  });
 });
 
 let allGameweekData = {};
