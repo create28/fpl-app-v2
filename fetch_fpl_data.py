@@ -18,33 +18,43 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Initialize SQLite database for historical data
 def init_db():
     """Initialize the SQLite database for storing historical FPL data."""
-    conn = sqlite3.connect('fpl_history.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS fpl_data
-                 (gameweek INTEGER,
-                  team_id INTEGER,
-                  team_name TEXT,
-                  manager_name TEXT,
-                  gw_points INTEGER,
-                  total_points INTEGER,
-                  rank INTEGER,
-                  team_value REAL,
-                  bank_balance REAL,
-                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                  PRIMARY KEY (gameweek, team_id))''')
-    
-    # Create table for award winners
-    c.execute('''CREATE TABLE IF NOT EXISTS award_winners
-                 (gameweek INTEGER,
-                  award_type TEXT,
-                  team_id INTEGER,
-                  team_name TEXT,
-                  manager_name TEXT,
-                  points INTEGER,
-                  PRIMARY KEY (gameweek, award_type))''')
-    
-    conn.commit()
-    conn.close()
+    print("Starting database initialization...")
+    try:
+        conn = sqlite3.connect('fpl_history.db')
+        c = conn.cursor()
+        
+        # Create main data table
+        c.execute('''CREATE TABLE IF NOT EXISTS fpl_data
+                     (gameweek INTEGER,
+                      team_id INTEGER,
+                      team_name TEXT,
+                      manager_name TEXT,
+                      gw_points INTEGER,
+                      total_points INTEGER,
+                      rank INTEGER,
+                      team_value REAL,
+                      bank_balance REAL,
+                      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      PRIMARY KEY (gameweek, team_id))''')
+        print("Created fpl_data table")
+        
+        # Create award winners table
+        c.execute('''CREATE TABLE IF NOT EXISTS award_winners
+                     (gameweek INTEGER,
+                      award_type TEXT,
+                      team_id INTEGER,
+                      team_name TEXT,
+                      manager_name TEXT,
+                      points INTEGER,
+                      PRIMARY KEY (gameweek, award_type))''')
+        print("Created award_winners table")
+        
+        conn.commit()
+        conn.close()
+        print("Database initialization complete")
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+        raise
 
 def store_fpl_data(gameweek, data):
     """Store FPL data in the database."""
@@ -492,12 +502,19 @@ def force_refresh_all_gameweeks():
     print('Full refresh complete!')
 
 def get_available_gameweeks():
-    conn = sqlite3.connect('fpl_history.db')
-    c = conn.cursor()
-    c.execute('SELECT DISTINCT gameweek FROM fpl_data ORDER BY gameweek')
-    gameweeks = [row[0] for row in c.fetchall()]
-    conn.close()
-    return gameweeks
+    """Get list of available gameweeks from the database."""
+    print("Fetching available gameweeks...")
+    try:
+        conn = sqlite3.connect('fpl_history.db')
+        c = conn.cursor()
+        c.execute('SELECT DISTINCT gameweek FROM fpl_data ORDER BY gameweek')
+        gameweeks = [row[0] for row in c.fetchall()]
+        conn.close()
+        print(f"Found gameweeks: {gameweeks}")
+        return gameweeks
+    except Exception as e:
+        print(f"Error fetching available gameweeks: {e}")
+        return []
 
 def read_gameweek_data(gameweek):
     """Read and display data for a specific gameweek."""
@@ -538,6 +555,8 @@ class FPLHandler(BaseHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         path = parsed_path.path
         
+        print(f"Received request for path: {path}")
+        
         if path == '/':
             # Serve the main HTML page
             self.send_response(200)
@@ -545,6 +564,7 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.end_headers()
             with open('index.html', 'rb') as f:
                 self.wfile.write(f.read())
+            print("Served index.html")
         
         elif path == '/styles.css':
             # Serve CSS file
@@ -568,6 +588,7 @@ class FPLHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             gameweeks = get_available_gameweeks()
+            print(f"Sending gameweeks: {gameweeks}")
             self.wfile.write(json.dumps(gameweeks).encode())
         
         elif path == '/api/current-gameweek':
@@ -591,6 +612,7 @@ class FPLHandler(BaseHTTPRequestHandler):
             # Handle data requests
             try:
                 gameweek = int(parsed_path.path.split('/')[-1])
+                print(f"Fetching data for gameweek {gameweek}")
                 if 1 <= gameweek <= 38:
                     data = get_fpl_data(gameweek)
                     if data:
@@ -598,12 +620,19 @@ class FPLHandler(BaseHTTPRequestHandler):
                         self.send_header('Content-type', 'application/json')
                         self.end_headers()
                         self.wfile.write(json.dumps(data).encode())
+                        print(f"Successfully sent data for gameweek {gameweek}")
                     else:
+                        print(f"No data found for gameweek {gameweek}")
                         self.send_error(500, "Failed to fetch FPL data")
                 else:
+                    print(f"Invalid gameweek number: {gameweek}")
                     self.send_error(400, "Invalid gameweek number")
-            except ValueError:
+            except ValueError as e:
+                print(f"Error parsing gameweek: {e}")
                 self.send_error(400, "Invalid gameweek format")
+            except Exception as e:
+                print(f"Error handling data request: {e}")
+                self.send_error(500, "Internal server error")
         
         else:
             self.send_error(404, "Not found")
@@ -616,18 +645,32 @@ def run_server():
         
         # Create cache directory if it doesn't exist
         os.makedirs('cache', exist_ok=True)
+        print("Cache directory created/verified")
         
-        # Preload only current gameweek data
+        # Preload initial data
         print("Preloading initial data...")
-        preload_data()
+        latest_gw = get_latest_valid_gameweek()
+        print(f"Latest valid gameweek: {latest_gw}")
+        
+        # Force fetch the latest gameweek data
+        data = get_fpl_data(latest_gw)
+        if data:
+            print(f"Successfully loaded gameweek {latest_gw}")
+            store_fpl_data(latest_gw, data['standings'])
+            store_award_winners(latest_gw, data['standings'], data['awards'].get('gameweek_champion', []))
+        else:
+            print(f"Failed to load gameweek {latest_gw}")
         
         # Start the periodic refresh thread
+        print("Starting periodic refresh thread...")
         refresh_thread = threading.Thread(target=refresh_data_periodically, daemon=True)
         refresh_thread.start()
         
+        # Start the server
         server_address = ('', int(os.environ.get('PORT', 8000)))
+        print(f"Starting server on port {server_address[1]}")
         httpd = HTTPServer(server_address, FPLHandler)
-        print(f"Server running on port {server_address[1]}")
+        print("Server started successfully")
         httpd.serve_forever()
     except Exception as e:
         print(f"Error starting server: {e}")
@@ -635,15 +678,19 @@ def run_server():
 
 def main():
     """Main function to initialize and run the server with periodic updates."""
-    # Initialize the database
-    init_db()
-    
-    # Start the periodic refresh in a separate thread
-    refresh_thread = threading.Thread(target=refresh_data_periodically, daemon=True)
-    refresh_thread.start()
-    
-    # Run the server
-    run_server()
+    try:
+        # Initialize the database
+        init_db()
+        
+        # Start the periodic refresh in a separate thread
+        refresh_thread = threading.Thread(target=refresh_data_periodically, daemon=True)
+        refresh_thread.start()
+        
+        # Run the server
+        run_server()
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
 
 def get_current_gameweek_data():
     """Fetch current gameweek data from the bootstrap-static endpoint."""
