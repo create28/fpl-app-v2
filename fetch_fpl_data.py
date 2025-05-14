@@ -283,7 +283,7 @@ def get_fpl_data(gameweek):
     """Fetch and process FPL data for a specific gameweek."""
     # First try to get historical data from database
     historical_data = get_historical_data(gameweek)
-    if historical_data:
+    if historical_data and any(team['gw_points'] > 0 for team in historical_data):
         # Get previous gameweek data for gameweek champion calculation
         previous_data = get_historical_data(gameweek - 1) if gameweek > 1 else None
         
@@ -296,13 +296,13 @@ def get_fpl_data(gameweek):
             'awards': awards
         }
 
-    # If no historical data, try to get from JSON cache
+    # If no historical data or all points are 0, try to get from JSON cache
     cache_file = f'cache/gameweek_{gameweek}.json'
     cached_data = load_data_from_json(cache_file)
-    if cached_data:
+    if cached_data and any(team['gw_points'] > 0 for team in cached_data.get('standings', [])):
         return cached_data
 
-    # If no cached data, fetch from API
+    # If no cached data or all points are 0, fetch from API
     league_id = 1658794
     league_url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/"
     league_data = fetch_data(league_url)
@@ -323,16 +323,25 @@ def get_fpl_data(gameweek):
         gw_url = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{gameweek}/picks/"
         gw_data = fetch_data(gw_url)
 
-        if gw_data:
+        if gw_data and 'entry_history' in gw_data:
             gw_points = gw_data['entry_history']['points']
             total_points = gw_data['entry_history']['total_points']
             team_value = gw_data['entry_history']['value'] / 10
             bank_balance = gw_data['entry_history']['bank'] / 10
         else:
-            gw_points = 0
-            total_points = 0
-            team_value = 0
-            bank_balance = 0
+            # Try to get data from the current gameweek endpoint
+            current_url = f"https://fantasy.premierleague.com/api/entry/{team_id}/"
+            current_data = fetch_data(current_url)
+            if current_data and 'current_event' in current_data:
+                gw_points = current_data['current_event']['points']
+                total_points = current_data['current_event']['total_points']
+                team_value = current_data['current_event']['value'] / 10
+                bank_balance = current_data['current_event']['bank'] / 10
+            else:
+                gw_points = 0
+                total_points = 0
+                team_value = 0
+                bank_balance = 0
 
         team_data = {
             'team_id': team_id,
@@ -346,34 +355,37 @@ def get_fpl_data(gameweek):
         }
         current_data.append(team_data)
 
-    # Store the data for future use
-    store_fpl_data(gameweek, current_data)
+    # Only store data if we have valid points
+    if any(team['gw_points'] > 0 for team in current_data):
+        store_fpl_data(gameweek, current_data)
+        
+        # Get previous gameweek data for comparison
+        previous_data = get_historical_data(gameweek - 1) if gameweek > 1 else None
+        if previous_data:
+            previous_ranks = {team['team_id']: team['rank'] for team in previous_data}
+            for team in current_data:
+                if team['team_id'] in previous_ranks:
+                    team['rank_change'] = previous_ranks[team['team_id']] - team['rank']
+
+        # Calculate all awards
+        awards = calculate_awards(current_data)
+        awards['gameweek_champion'] = calculate_gameweek_champion(gameweek, current_data, previous_data)
+        
+        # Store award winners
+        store_award_winners(gameweek, current_data, awards['gameweek_champion'])
+
+        result_data = {
+            'standings': current_data,
+            'awards': awards
+        }
+
+        # Cache the result
+        os.makedirs('cache', exist_ok=True)
+        save_data_to_json(result_data, cache_file)
+
+        return result_data
     
-    # Get previous gameweek data for comparison
-    previous_data = get_historical_data(gameweek - 1) if gameweek > 1 else None
-    if previous_data:
-        previous_ranks = {team['team_id']: team['rank'] for team in previous_data}
-        for team in current_data:
-            if team['team_id'] in previous_ranks:
-                team['rank_change'] = previous_ranks[team['team_id']] - team['rank']
-
-    # Calculate all awards
-    awards = calculate_awards(current_data)
-    awards['gameweek_champion'] = calculate_gameweek_champion(gameweek, current_data, previous_data)
-    
-    # Store award winners
-    store_award_winners(gameweek, current_data, awards['gameweek_champion'])
-
-    result_data = {
-        'standings': current_data,
-        'awards': awards
-    }
-
-    # Cache the result
-    os.makedirs('cache', exist_ok=True)
-    save_data_to_json(result_data, cache_file)
-
-    return result_data
+    return None
 
 def get_latest_valid_gameweek():
     """Find the latest gameweek that has valid data (not all zeros)."""
@@ -438,31 +450,39 @@ def is_game_active():
         return False
 
 def refresh_data_periodically():
-    """Periodically refresh FPL data with dynamic intervals."""
+    """Periodically refresh FPL data."""
     while True:
         try:
-            print("Refreshing FPL data...")
+            # Get the latest valid gameweek
             current_gw = get_latest_valid_gameweek()
-            print(f"Latest valid gameweek: {current_gw}")
-            
-            # Fetch data for current gameweek
+            if current_gw is None:
+                print("Could not determine current gameweek, retrying in 5 minutes...")
+                time.sleep(300)
+                continue
+
+            # Fetch and store data for the current gameweek
             data = get_fpl_data(current_gw)
             if data:
-                print(f"Successfully refreshed gameweek {current_gw}")
-            else:
-                print(f"Failed to refresh gameweek {current_gw}")
-            
-            # Check if there's an active game
-            if is_game_active():
-                print("Game is active - refreshing in 15 minutes")
-                time.sleep(900)  # 15 minutes
-            else:
-                print("No active game - refreshing in 1 hour")
-                time.sleep(3600)  # 1 hour
+                store_fpl_data(current_gw, data)
                 
+                # Get previous gameweek data for comparison
+                if current_gw > 1:
+                    prev_data = get_fpl_data(current_gw - 1)
+                    if prev_data:
+                        gameweek_champions = calculate_gameweek_champion(current_gw, data, prev_data)
+                        store_award_winners(current_gw, data, gameweek_champions)
+                
+                print(f"Successfully updated data for gameweek {current_gw}")
+            else:
+                print(f"Failed to fetch data for gameweek {current_gw}")
+
+            # Wait for 5 minutes before next refresh
+            time.sleep(300)
+            
         except Exception as e:
-            print(f"Error refreshing data: {e}")
-            time.sleep(300)  # Wait 5 minutes before retrying on error
+            print(f"Error in periodic refresh: {e}")
+            # Wait for 1 minute before retrying after an error
+            time.sleep(60)
 
 def force_refresh_all_gameweeks():
     print('Forcing refresh for all gameweeks...')
@@ -478,6 +498,34 @@ def get_available_gameweeks():
     gameweeks = [row[0] for row in c.fetchall()]
     conn.close()
     return gameweeks
+
+def read_gameweek_data(gameweek):
+    """Read and display data for a specific gameweek."""
+    conn = sqlite3.connect('fpl_history.db')
+    c = conn.cursor()
+    
+    print(f"\nGameweek {gameweek} Data:")
+    print("-" * 50)
+    
+    # Get standings data
+    c.execute('''SELECT team_name, manager_name, gw_points, total_points, rank 
+                 FROM fpl_data WHERE gameweek = ? ORDER BY rank''', (gameweek,))
+    standings = c.fetchall()
+    
+    print("Standings:")
+    for team in standings:
+        print(f"Rank {team[3]}: {team[0]} ({team[1]}) - {team[2]} points")
+    
+    # Get award winners
+    c.execute('''SELECT award_type, team_name, manager_name, points 
+                 FROM award_winners WHERE gameweek = ?''', (gameweek,))
+    awards = c.fetchall()
+    
+    print("\nAwards:")
+    for award in awards:
+        print(f"{award[0]}: {award[1]} ({award[2]}) - {award[3]} points")
+    
+    conn.close()
 
 class FPLHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -585,12 +633,45 @@ def run_server():
         print(f"Error starting server: {e}")
         raise
 
+def main():
+    """Main function to initialize and run the server with periodic updates."""
+    # Initialize the database
+    init_db()
+    
+    # Start the periodic refresh in a separate thread
+    refresh_thread = threading.Thread(target=refresh_data_periodically, daemon=True)
+    refresh_thread.start()
+    
+    # Run the server
+    run_server()
+
+def get_current_gameweek_data():
+    """Fetch current gameweek data from the bootstrap-static endpoint."""
+    try:
+        response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', verify=False)
+        if response.status_code == 200:
+            data = response.json()
+            events = data['events']
+            current_event = next((event for event in events if event['is_current']), None)
+            
+            if current_event:
+                print(f"\nCurrent Gameweek Information:")
+                print("-" * 50)
+                print(f"Gameweek: {current_event['id']}")
+                print(f"Name: {current_event['name']}")
+                print(f"Deadline: {current_event['deadline_time']}")
+                print(f"Finished: {current_event['finished']}")
+                print(f"Data Checked: {current_event['data_checked']}")
+                return current_event
+            else:
+                print("No current gameweek found")
+                return None
+        else:
+            print(f"Error fetching current gameweek data: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Error in get_current_gameweek_data: {e}")
+        return None
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == 'fullrefresh':
-        force_refresh_all_gameweeks()
-    else:
-        try:
-            run_server()
-        except Exception as e:
-            print(f"Fatal error: {e}")
-            sys.exit(1)
+    main()
