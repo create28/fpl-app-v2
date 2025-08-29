@@ -1,3 +1,12 @@
+// Environment detection and API configuration
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const API_BASE_URL = isProduction 
+    ? 'https://fpl-app-v2.onrender.com'  // Production (Render)
+    : 'http://localhost:8000';            // Local development
+
+console.log(`Environment: ${isProduction ? 'Production' : 'Local Development'}`);
+console.log(`API Base URL: ${API_BASE_URL}`);
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize gameweek data
@@ -32,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
             refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
             
             try {
-                const response = await fetch('/api/refresh-data');
+                const response = await fetch(`${API_BASE_URL}/api/refresh-data`);
                 const result = await response.json();
                 
                 if (result.status === 'success') {
@@ -82,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
             
             try {
-                const response = await fetch(`/api/fetch-players/${currentGameweek}`);
+                const response = await fetch(`${API_BASE_URL}/api/fetch-players/${currentGameweek}`);
                 const result = await response.json();
                 
                 if (result.status === 'success') {
@@ -114,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize gameweek data
 function initializeGameweekData() {
     // Get current gameweek
-    fetch('/api/current-gameweek')
+                fetch(`${API_BASE_URL}/api/current-gameweek`)
         .then(response => response.json())
         .then(data => {
             const currentGW = data.current_gameweek;
@@ -123,7 +132,7 @@ function initializeGameweekData() {
             const select = document.getElementById('gameweekSelect');
             if (select) {
                 // Get available gameweeks
-                fetch('/api/gameweeks')
+                fetch(`${API_BASE_URL}/api/gameweeks`)
                     .then(response => response.json())
                     .then(data => {
                         const gameweeks = data.gameweeks; // Extract the gameweeks array from the response
@@ -149,7 +158,7 @@ function initializeGameweekData() {
 // Load gameweek data
 function loadGameweekData(gameweek) {
     console.log('Loading data for gameweek:', gameweek);
-    fetch(`/api/data/${gameweek}`)
+    fetch(`${API_BASE_URL}/api/data/${gameweek}`)
         .then(response => response.json())
         .then(data => {
             console.log('Received data:', data);

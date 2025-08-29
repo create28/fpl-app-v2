@@ -23,9 +23,16 @@ class FPLDataServer:
         self.running = False
         self.refresh_thread = None
         
-    def start(self, port=8000):
+    def start(self, port=None):
         """Start the FPL Data Server."""
+        from config import Config
+        
+        # Use config port if none specified
+        if port is None:
+            port = Config.PORT
+            
         print("Starting FPL Data Server...")
+        Config.print_config()
         self.running = True
         
         # Start periodic refresh thread
@@ -120,8 +127,9 @@ class FPLDataServer:
         try:
             print(f"Refreshing data for gameweek {gameweek}...")
             
-            # Get league ID from a known team (you might want to store this)
-            league_id = 874353  # FPL League ID
+            # Get league ID from config
+            from config import Config
+            league_id = Config.FPL_LEAGUE_ID
             
             # Fetch league standings
             standings = fpl_api.get_league_standings(league_id)
@@ -209,7 +217,7 @@ def main():
     
     try:
         # Start the server
-        server.start(port=8000)
+        server.start()
     except KeyboardInterrupt:
         print("\nReceived interrupt signal, shutting down...")
     finally:

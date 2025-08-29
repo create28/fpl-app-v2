@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: fpl-app
+    name: fpl-app-v2
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python fetch_fpl_data.py
+    startCommand: python main.py
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0 
+        value: 3.9.0
+      - key: PORT
+        value: 8000
+    healthCheckPath: /api/current-gameweek
+    autoDeploy: true 
