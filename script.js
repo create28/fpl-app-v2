@@ -1,347 +1,378 @@
-document.getElementById('previousCsvFile').addEventListener('change', handlePreviousFile, false);
-document.getElementById('currentCsvFile').addEventListener('change', handleCurrentFile, false);
-
-let previousData = [];
-let currentData = [];
-
-function handlePreviousFile(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const csvData = e.target.result;
-      Papa.parse(csvData, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          previousData = results.data;
-          if (currentData.length > 0) displayData();
-        }
-      });
-    };
-    reader.readAsText(file);
-  }
-}
-
-function handleCurrentFile(event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const csvData = e.target.result;
-      Papa.parse(csvData, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          currentData = results.data;
-          if (previousData.length > 0) displayData();
-        }
-      });
-    };
-    reader.readAsText(file);
-  }
-}
-
-function displayData() {
-  const tableBody = document.querySelector('#leagueTable tbody');
-  tableBody.innerHTML = ''; // Clear existing table data
-
-  let maxPoints = -Infinity;
-  let minPoints = Infinity;
-  let maxPointsGain = -Infinity;
-  let totalPoints = 0;
-  let weeklyWinners = [];
-  let woodenSpoons = [];
-  let performanceOfTheWeek = [];
-
-  const previousMap = {};
-  previousData.forEach(row => {
-    previousMap[row['Team Name']] = row;
-  });
-
-  currentData.forEach(row => {
-    const previousRow = previousMap[row['Team Name']];
-    if (previousRow) {
-      const currentPoints = parseInt(row['Gameweek Points'], 10);
-      const previousPoints = parseInt(previousRow['Gameweek Points'], 10);
-      const pointsGain = currentPoints - previousPoints;
-      totalPoints += currentPoints;
-
-      const totalPointsCurrent = row['Total Points'] || 0; // Total Points from current gameweek CSV
-
-      // Determine Weekly Winner and Wooden Spoon
-      if (currentPoints === maxPoints) {
-        weeklyWinners.push(`${row['Manager Name']} (${currentPoints} points)`);
-      } else if (currentPoints > maxPoints) {
-        maxPoints = currentPoints;
-        weeklyWinners = [`${row['Manager Name']} (${currentPoints} points)`];
-      }
-
-      if (currentPoints === minPoints) {
-        woodenSpoons.push(`${row['Manager Name']} (${currentPoints} points)`);
-      } else if (currentPoints < minPoints) {
-        minPoints = currentPoints;
-        woodenSpoons = [`${row['Manager Name']} (${currentPoints} points)`];
-      }
-
-      // Determine Performance of the Week
-      if (pointsGain === maxPointsGain) {
-        performanceOfTheWeek.push(`${row['Manager Name']} (+${pointsGain} points)`);
-      } else if (pointsGain > maxPointsGain) {
-        maxPointsGain = pointsGain;
-        performanceOfTheWeek = [`${row['Manager Name']} (+${pointsGain} points)`];
-      }
-
-      const rankChange = parseInt(previousRow['Rank'], 10) - parseInt(row['Rank'], 10);
-      const pointsChange = currentPoints - previousPoints;
-
-      const rankChangeClass = rankChange > 0 ? 'rank-change-positive' : rankChange < 0 ? 'rank-change-negative' : '';
-      const pointsChangeClass = pointsChange > 0 ? 'points-change-positive' : pointsChange < 0 ? 'points-change-negative' : '';
-
-const tr = document.createElement('tr');
-tr.innerHTML = `
-  <td>${row['Team Name']} (${row['Manager Name']})</td>
-  <td><strong>${row['Rank']}</strong> (${previousRow['Rank']})</td>
-  <td class="${rankChangeClass}">${rankChange > 0 ? '+' : ''}${rankChange}</td>
-  <td><strong>${currentPoints}</strong> (${previousPoints})</td>
-  <td class="${pointsChangeClass}">${pointsChange > 0 ? '+' : ''}${pointsChange}</td>
-  <td><strong>${totalPointsCurrent}</strong></td>
-`;
-tableBody.appendChild(tr);
-
-    }
-  });
-
-  // Calculate and display average score
-  const averageScore = Math.round(totalPoints / currentData.length);
-  document.getElementById('averageScore').textContent = `${averageScore} points`;
-
-  // Display awards
-  document.getElementById('weeklyWinner').textContent = weeklyWinners.join(", ");
-  document.getElementById('woodenSpoon').textContent = woodenSpoons.join(", ");
-  document.getElementById('performanceOfTheWeek').textContent = performanceOfTheWeek.join(", ");
-}
-
-// Screenshot capture function
-function captureScreenshot() {
-  const captureArea = document.getElementById("captureArea");
-  html2canvas(captureArea, {
-    ignoreElements: element => element.tagName === 'BUTTON'
-  }).then(canvas => {
-    const link = document.createElement("a");
-    link.href = canvas.toDataURL("image/png");
-    link.download = "FPL_League_Summary.png";
-    link.click();
-  });
-}
-
+// Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-  Promise.all([
-    fetch('/api/gameweeks').then(r => r.json()),
-    fetch('/api/current-gameweek').then(r => r.json())
-  ]).then(([gameweeks, currentGWObj]) => {
-    const select = document.getElementById('gameweekSelect');
-    select.innerHTML = '';
-    gameweeks.forEach(gw => {
-      const option = document.createElement('option');
-      option.value = gw;
-      option.textContent = `Gameweek ${gw}`;
-      select.appendChild(option);
-    });
-    // Set to current gameweek
-    if (gameweeks.length > 0) {
-      select.value = currentGWObj.current_gameweek;
+    // Initialize gameweek data
+    initializeGameweekData();
+
+    // Add event listener for gameweek selector
+    const gameweekSelect = document.getElementById('gameweekSelect');
+    if (gameweekSelect) {
+        gameweekSelect.addEventListener('change', function(e) {
+            const gameweek = e.target.value;
+            if (gameweek) {
+                loadGameweekData(gameweek);
+            }
+        });
     }
-    // Load all gameweek data for history, etc.
-    fetch('/api/all-data')
-      .then(response => response.json())
-      .then(allData => {
-        allGameweekData = allData;
-        displayGameweekData(select.value);
-      });
-  });
 
-  // Handle gameweek selection
-  document.getElementById('gameweekSelect').addEventListener('change', function(e) {
-    const gameweek = e.target.value;
-    if (gameweek) {
-      displayGameweekData(gameweek);
+    // Screenshot button event
+    const screenshotBtn = document.getElementById('screenshotBtn');
+    if (screenshotBtn) {
+        screenshotBtn.addEventListener('click', captureScreenshot);
     }
-  });
 
-  // Screenshot button event
-  document.getElementById('screenshotBtn').addEventListener('click', captureScreenshot);
+    // Manual refresh functionality
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    const refreshStatus = document.getElementById('refreshStatus');
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+            // Disable button and show loading state
+            refreshBtn.disabled = true;
+            refreshStatus.textContent = 'Refreshing data...';
+            refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
+            
+            try {
+                const response = await fetch('/api/refresh-data');
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    refreshStatus.textContent = result.message;
+                    refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-green-100 text-green-800';
+                    
+                    // Wait a moment then refresh the page to show updated data
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    refreshStatus.textContent = result.message;
+                    refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
+                }
+            } catch (error) {
+                refreshStatus.textContent = 'Error: Failed to refresh data';
+                refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
+                console.error('Refresh error:', error);
+            } finally {
+                // Re-enable button after a delay
+                setTimeout(() => {
+                    refreshBtn.disabled = false;
+                }, 3000);
+            }
+        });
+    }
 
-  // Handle award type tabs
-  document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', function() {
-      // Update active tab
-      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-      this.classList.add('active');
-      
-      // Update displayed award type
-      const awardType = this.dataset.award;
-      displayAwardsHistory(awardType);
-    });
-  });
+    // Manual player data fetch functionality
+    const fetchPlayersBtn = document.getElementById('fetchPlayersBtn');
+    const fetchStatus = document.getElementById('fetchStatus');
+    
+    if (fetchPlayersBtn) {
+        fetchPlayersBtn.addEventListener('click', async function() {
+            // Get current gameweek
+            const gameweekSelect = document.getElementById('gameweekSelect');
+            const currentGameweek = gameweekSelect.value;
+            
+            if (!currentGameweek) {
+                fetchStatus.textContent = 'Please select a gameweek first';
+                fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-yellow-100 text-yellow-800';
+                return;
+            }
+            
+            // Disable button and show loading state
+            fetchPlayersBtn.disabled = true;
+            fetchStatus.textContent = 'Fetching player data... This may take a few minutes.';
+            fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
+            
+            try {
+                const response = await fetch(`/api/fetch-players/${currentGameweek}`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    fetchStatus.textContent = result.message;
+                    fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-green-100 text-green-800';
+                    
+                    // Reload the current gameweek data to show new awards
+                    setTimeout(() => {
+                        loadGameweekData(currentGameweek);
+                    }, 2000);
+                } else {
+                    fetchStatus.textContent = result.message;
+                    fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
+                }
+            } catch (error) {
+                fetchStatus.textContent = 'Error: Failed to fetch player data';
+                fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
+                console.error('Fetch error:', error);
+            } finally {
+                // Re-enable button after a delay
+                setTimeout(() => {
+                    fetchPlayersBtn.disabled = false;
+                }, 5000);
+            }
+        });
+    }
 });
 
-let allGameweekData = {};
-
-function loadAllGameweekData() {
-    // Load all gameweek data
-    return fetch('/api/all-data')
+// Initialize gameweek data
+function initializeGameweekData() {
+    // Get current gameweek
+    fetch('/api/current-gameweek')
         .then(response => response.json())
-        .then(allData => {
-            allGameweekData = allData;
+        .then(data => {
+            const currentGW = data.current_gameweek;
             
-            // Get the selected gameweek from the dropdown
-            const selectedGameweek = document.getElementById('gameweekSelect').value;
-            console.log('Displaying data for gameweek:', selectedGameweek);
-            
-            // Display the selected gameweek data
-            displayGameweekData(selectedGameweek);
-            
-            // Initialize awards history with the first tab
-            const firstTab = document.querySelector('.tab-button.active');
-            if (firstTab) {
-                displayAwardsHistory(firstTab.dataset.award);
+            // Populate gameweek selector
+            const select = document.getElementById('gameweekSelect');
+            if (select) {
+                // Get available gameweeks
+                fetch('/api/gameweeks')
+                    .then(response => response.json())
+                    .then(data => {
+                        const gameweeks = data.gameweeks; // Extract the gameweeks array from the response
+                        select.innerHTML = '<option value="">Select Gameweek</option>';
+                        gameweeks.forEach(gw => {
+                            const option = document.createElement('option');
+                            option.value = gw;
+                            option.textContent = `Gameweek ${gw}`;
+                            if (gw === currentGW) {
+                                option.selected = true;
+                                // Load data for current gameweek
+                                loadGameweekData(gw);
+                            }
+                            select.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error loading gameweeks:', error));
             }
         })
-        .catch(error => console.error('Error loading gameweek data:', error));
+        .catch(error => console.error('Error loading current gameweek:', error));
 }
 
-function displayGameweekData(gameweek) {
-    const data = allGameweekData[gameweek];
-    if (data) {
-        updateTable(data.standings);
-        updateAwards(data.awards);
-    }
+// Load gameweek data
+function loadGameweekData(gameweek) {
+    console.log('Loading data for gameweek:', gameweek);
+    fetch(`/api/data/${gameweek}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Received data:', data);
+            if (data) {
+                updateTable(data.standings);
+                updateAwards(data.awards);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading gameweek data:', error);
+        });
 }
 
+// Update table with data
 function updateTable(data) {
+    console.log('updateTable called with data:', data);
+    console.log('Data length:', data.length);
+    
     const tbody = document.querySelector('#standingsTable tbody');
     tbody.innerHTML = '';
 
     // Sort data by total points (descending)
     const sortedData = [...data].sort((a, b) => b.total_points - a.total_points);
+    console.log('Sorted data length:', sortedData.length);
+    console.log('First 3 teams:', sortedData.slice(0, 3));
+    console.log('Last 3 teams:', sortedData.slice(-3));
 
     sortedData.forEach((team, index) => {
+        console.log(`Processing team ${index + 1}:`, team);
         const row = document.createElement('tr');
         
-        // Add rank change indicator
-        let rankChangeHtml = '';
-        if (team.rank_change) {
-            const change = team.rank_change;
-            const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-            const color = change > 0 ? 'green' : change < 0 ? 'red' : 'gray';
-            rankChangeHtml = `<span style="color: ${color}">${arrow} ${Math.abs(change)}</span>`;
+        // Create merged rank and rank change display
+        let rankDisplayHtml = '';
+        if (team.rank_change_badge) {
+            // Use the new badge data from backend
+            const badge = team.rank_change_badge;
+            console.log(`Team ${team.team_name} badge data:`, badge);
+            rankDisplayHtml = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg font-bold text-slate-900">#${team.overall_rank || team.rank}</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.bg_color} ${badge.text_color} ${badge.border_color} border">
+                        ${badge.icon} ${badge.text}
+                    </span>
+                </div>
+            `;
+        } else {
+            // Fallback if no badge data
+            console.log(`Team ${team.team_name} has no badge data`);
+            rankDisplayHtml = `<span class="text-lg font-bold text-slate-900">#${team.overall_rank || team.rank}</span>`;
         }
 
+        // Add previous gameweek score if available
+        const previousScore = team.previous_gw_points !== undefined && team.previous_gw_points !== null ? ` (${team.previous_gw_points})` : '';
+        
+        // Create awards display
+        let awardsHtml = '';
+        if (team.awards && team.awards.length > 0) {
+            awardsHtml = `
+                <div class="flex flex-wrap gap-1">
+                    ${team.awards.map(award => `
+                        <span class="award-badge inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${award.color} border shadow-sm" 
+                              title="${award.text}">
+                            ${award.emoji}
+                        </span>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            awardsHtml = '<span class="text-gray-400 text-xs">—</span>';
+        }
+        
         row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${team.team_name}</td>
-            <td>${team.manager_name}</td>
-            <td>${team.gw_points}</td>
-            <td>${team.total_points}</td>
-            <td>£${team.team_value.toFixed(1)}m</td>
-            <td>£${team.bank_balance.toFixed(1)}m</td>
-            <td>${rankChangeHtml}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm">${rankDisplayHtml}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">${team.team_name}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-700">${team.manager_name}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm">${awardsHtml}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">${team.gw_points}${previousScore}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">${team.total_points}</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">£${team.team_value.toFixed(1)}m</td>
+            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">£${team.bank_balance.toFixed(1)}m</td>
         `;
         
         tbody.appendChild(row);
     });
+    
+    console.log('Table updated with', tbody.children.length, 'rows');
 }
 
+// Update awards display
 function updateAwards(awards) {
     if (!awards) return;
 
     // Update Weekly Champion
-    const weeklyChampionCard = document.querySelector('.award-card:nth-child(1) .award-content');
+    const weeklyChampionCard = document.querySelector('#weekly-champion-card .award-content');
     if (awards.weekly_champion && awards.weekly_champion.length > 0) {
         weeklyChampionCard.innerHTML = awards.weekly_champion.map(champion => `
-            <h3>${champion.team_name}</h3>
-            <p>${champion.manager_name}</p>
-            <p class="points">${champion.points} points</p>
-        `).join('<hr>');
+            <h3 class="text-lg font-semibold mb-2">${champion.team_name}</h3>
+            <p class="text-sm mb-1">${champion.manager_name}</p>
+            <p class="text-lg font-bold">${champion.points} points</p>
+        `).join('<hr class="my-3">');
     } else {
-        weeklyChampionCard.innerHTML = '<p>No data available</p>';
+        weeklyChampionCard.innerHTML = '<p class="text-white/80">No data available</p>';
     }
 
     // Update Wooden Spoon
-    const woodenSpoonCard = document.querySelector('.award-card:nth-child(2) .award-content');
+    const woodenSpoonCard = document.querySelector('#wooden-spoon-card .award-content');
     if (awards.wooden_spoon && awards.wooden_spoon.length > 0) {
         woodenSpoonCard.innerHTML = awards.wooden_spoon.map(spoon => `
-            <h3>${spoon.team_name}</h3>
-            <p>${spoon.manager_name}</p>
-            <p class="points">${spoon.points} points</p>
-        `).join('<hr>');
+            <h3 class="text-lg font-semibold mb-2">${spoon.team_name}</h3>
+            <p class="text-sm mb-1">${spoon.manager_name}</p>
+            <p class="text-lg font-bold">${spoon.points} points</p>
+        `).join('<hr class="my-3">');
     } else {
-        woodenSpoonCard.innerHTML = '<p>No data available</p>';
+        woodenSpoonCard.innerHTML = '<p class="text-white/80">No data available</p>';
     }
 
-    // Update Gameweek Champion
-    const gameweekChampionCard = document.querySelector('.award-card:nth-child(3) .award-content');
-    if (awards.gameweek_champion && awards.gameweek_champion.length > 0) {
-        gameweekChampionCard.innerHTML = awards.gameweek_champion.map(champion => `
-            <h3>${champion.team_name}</h3>
-            <p>${champion.manager_name}</p>
-            <p class="points">+${champion.points} points</p>
-        `).join('<hr>');
+    // Update Performance of the Week
+    const gameweekChampionCard = document.querySelector('#gameweek-champion-card .award-content');
+    if (awards.performance_of_week && awards.performance_of_week.length > 0) {
+        gameweekChampionCard.innerHTML = awards.performance_of_week.map(champion => `
+            <h3 class="text-lg font-semibold mb-2">${champion.team_name}</h3>
+            <p class="text-sm mb-1">${champion.manager_name}</p>
+            <p class="text-lg font-bold">${champion.points > 0 ? '+' : ''}${champion.points} points</p>
+        `).join('<hr class="my-3">');
     } else {
-        gameweekChampionCard.innerHTML = '<p>No data available</p>';
+        gameweekChampionCard.innerHTML = '<p class="text-white/80">No data available</p>';
+    }
+
+    // Update The Wall
+    const theWallCard = document.querySelector('#the-wall-card .award-content');
+    if (awards.the_wall && awards.the_wall.length > 0) {
+        theWallCard.innerHTML = awards.the_wall.map(wall => `
+            <h3 class="text-lg font-semibold mb-2">${wall.team_name}</h3>
+            <p class="text-sm mb-1">${wall.manager_name}</p>
+            <p class="text-lg font-bold">${wall.points} points</p>
+            ${wall.details ? `<p class="text-sm text-white/80 mt-1">${wall.details}</p>` : ''}
+        `).join('<hr class="my-3">');
+    } else {
+        theWallCard.innerHTML = '<p class="text-white/80">No data available</p>';
+    }
+
+    // Update Benchwarmer
+    const benchwarmerCard = document.querySelector('#benchwarmer-card .award-content');
+    if (awards.benchwarmer && awards.benchwarmer.length > 0) {
+        benchwarmerCard.innerHTML = awards.benchwarmer.map(bench => `
+            <h3 class="text-lg font-semibold mb-2">${bench.team_name}</h3>
+            <p class="text-sm mb-1">${bench.manager_name}</p>
+            <p class="text-lg font-bold">${bench.points} points</p>
+            ${bench.details ? `<p class="text-sm text-white/80 mt-1">${bench.details}</p>` : ''}
+        `).join('<hr class="my-3">');
+    } else {
+        benchwarmerCard.innerHTML = '<p class="text-white/80">No data available</p>';
+    }
+
+    // Update Captain Fantastic
+    const captainFantasticCard = document.querySelector('#captain-fantastic-card .award-content');
+    if (awards.captain_fantastic && awards.captain_fantastic.length > 0) {
+        captainFantasticCard.innerHTML = awards.captain_fantastic.map(captain => `
+            <h3 class="text-lg font-semibold mb-2">${captain.team_name}</h3>
+            <p class="text-sm mb-1">${captain.manager_name}</p>
+            <p class="text-lg font-bold">${captain.points} points</p>
+            ${captain.details ? `<p class="text-sm text-white/80 mt-1">${captain.details}</p>` : ''}
+        `).join('<hr class="my-3">');
+    } else {
+        captainFantasticCard.innerHTML = '<p class="text-white/80">No data available</p>';
     }
 }
 
-function displayAwardsHistory(awardType) {
-    const historyContent = document.getElementById('awardsHistoryContent');
-    if (!allGameweekData) {
-        historyContent.innerHTML = '<p>No awards data available.</p>';
+// Screenshot capture function
+function captureScreenshot() {
+    const captureArea = document.getElementById('captureArea');
+    const screenshotBtn = document.getElementById('screenshotBtn');
+    
+    if (!captureArea) {
+        console.error('Capture area not found');
         return;
     }
 
-    // Collect all awards of the specified type across all gameweeks
-    const allAwards = [];
-    Object.entries(allGameweekData).forEach(([gameweek, data]) => {
-        if (data.awards && data.awards[awardType]) {
-            data.awards[awardType].forEach(winner => {
-                allAwards.push({
-                    gameweek: parseInt(gameweek),
-                    ...winner
-                });
-            });
-        }
-    });
+    // Show loading state
+    const originalText = screenshotBtn.innerHTML;
+    screenshotBtn.innerHTML = '📸 Capturing...';
+    screenshotBtn.disabled = true;
 
-    if (allAwards.length === 0) {
-        historyContent.innerHTML = '<p>No awards data available.</p>';
-        return;
-    }
+    // Add screenshot mode class to simplify rendering
+    captureArea.classList.add('screenshot-mode');
+    
+    // Wait for styles to apply
+    setTimeout(() => {
+        html2canvas(captureArea, {
+            backgroundColor: '#ffffff',
+            scale: 1.5,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            removeContainer: true,
+            foreignObjectRendering: false,
+            imageTimeout: 15000
+        }).then(canvas => {
+            console.log('Screenshot captured successfully');
+            
+            // Remove screenshot mode class
+            captureArea.classList.remove('screenshot-mode');
 
-    // Count wins for each manager
-    const winCounts = {};
-    allAwards.forEach(award => {
-        const key = `${award.manager_name} (${award.team_name})`;
-        winCounts[key] = (winCounts[key] || 0) + 1;
-    });
+            // Create download link
+            const link = document.createElement('a');
+            const gameweekSelect = document.getElementById('gameweekSelect');
+            const currentGameweek = gameweekSelect ? gameweekSelect.value : 'unknown';
+            link.download = `fpl-standings-gw${currentGameweek}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
 
-    // Sort by gameweek (descending)
-    allAwards.sort((a, b) => b.gameweek - a.gameweek);
+            // Restore button
+            screenshotBtn.innerHTML = originalText;
+            screenshotBtn.disabled = false;
+        }).catch(error => {
+            console.error('Screenshot error:', error);
+            
+            // Remove screenshot mode class on error
+            captureArea.classList.remove('screenshot-mode');
 
-    const historyHTML = allAwards.map(award => {
-        const key = `${award.manager_name} (${award.team_name})`;
-        const winCount = winCounts[key];
-        const winBadge = winCount > 1 ? `<span class="win-badge">${winCount}×</span>` : '';
-        
-        return `
-            <div class="award-history-item">
-                <h3>Gameweek ${award.gameweek}</h3>
-                <p class="team-name">${award.team_name}</p>
-                <p class="manager-name">${award.manager_name} ${winBadge}</p>
-                <p class="points">${award.points} points</p>
-            </div>
-        `;
-    }).join('');
-
-    historyContent.innerHTML = historyHTML;
+            // Restore button
+            screenshotBtn.innerHTML = originalText;
+            screenshotBtn.disabled = false;
+        });
+    }, 200);
 }
