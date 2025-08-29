@@ -192,21 +192,24 @@ function updateTable(data) {
         
         // Create merged rank and rank change display
         let rankDisplayHtml = '';
-        if (team.rank_change_badge) {
-            // Use the new badge data from backend
-            const badge = team.rank_change_badge;
-            console.log(`Team ${team.team_name} badge data:`, badge);
+        if (team.rank_change !== undefined && team.rank_change !== null) {
+            // Display rank with rank change
+            const changeSymbol = team.rank_change > 0 ? '↑' : team.rank_change < 0 ? '↓' : '−';
+            const changeText = team.rank_change !== 0 ? `${changeSymbol}${Math.abs(team.rank_change)}` : '−0';
+            const changeColor = team.rank_change > 0 ? 'text-green-600' : team.rank_change < 0 ? 'text-red-600' : 'text-gray-500';
+            
             rankDisplayHtml = `
                 <div class="flex items-center space-x-2">
                     <span class="text-lg font-bold text-slate-900">#${team.overall_rank || team.rank}</span>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.bg_color} ${badge.text_color} ${badge.border_color} border">
-                        ${badge.icon} ${badge.text}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-300">
+                        <span class="${changeColor} font-semibold">${changeText}</span>
                     </span>
                 </div>
             `;
+            console.log(`Team ${team.team_name} rank change: ${changeText}`);
         } else {
-            // Fallback if no badge data
-            console.log(`Team ${team.team_name} has no badge data`);
+            // Fallback if no rank change data
+            console.log(`Team ${team.team_name} has no rank change data`);
             rankDisplayHtml = `<span class="text-lg font-bold text-slate-900">#${team.overall_rank || team.rank}</span>`;
         }
 

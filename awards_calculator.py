@@ -82,8 +82,9 @@ class AwardsCalculator:
         # Check if we have any player performance data for this gameweek
         has_player_data = self._check_player_data_availability(gameweek)
         if not has_player_data:
-            print(f"No player performance data available for gameweek {gameweek}, skipping detailed awards")
-            return {}
+            print(f"No player performance data available for gameweek {gameweek}, creating fallback awards")
+            # Create fallback awards based on team performance
+            return self._create_fallback_awards(teams_data, gameweek)
         
         for i, team in enumerate(teams_data):
             team_id = team['team_id']
@@ -149,6 +150,65 @@ class AwardsCalculator:
             print(f"Captain Fantastic winner(s): {[w['team_name'] for w in awards['captain_fantastic']]} with {max_captain['points']} points")
         
         print(f"Award calculation complete for gameweek {gameweek}")
+        return awards
+    
+    def _create_fallback_awards(self, teams_data, gameweek):
+        """Create fallback awards when player performance data is not available."""
+        print(f"Creating fallback awards for gameweek {gameweek}")
+        
+        # Sort teams by gameweek points
+        sorted_teams = sorted(teams_data, key=lambda x: x['gw_points'], reverse=True)
+        
+        awards = {}
+        
+        # The Wall: Best defensive performance (lowest goals conceded, or highest clean sheet bonus)
+        # Since we don't have detailed data, award to team with highest gameweek points
+        if sorted_teams:
+            wall_winner = sorted_teams[0]
+            awards['the_wall'] = [{
+                'team_id': wall_winner['team_id'],
+                'team_name': wall_winner['team_name'],
+                'manager_name': wall_winner['manager_name'],
+                'points': wall_winner['gw_points'],
+                'details': 'Fallback: Highest gameweek points'
+            }]
+            print(f"Fallback The Wall: {wall_winner['team_name']} with {wall_winner['gw_points']} points")
+        
+        # Benchwarmer: Team with most points from bench (approximate using team value efficiency)
+        if len(sorted_teams) > 1:
+            # Find team with best points-to-value ratio (efficient use of budget)
+            efficiency_scores = []
+            for team in teams_data:
+                if team['team_value'] > 0:
+                    efficiency = team['gw_points'] / team['team_value']
+                    efficiency_scores.append((team, efficiency))
+            
+            if efficiency_scores:
+                best_efficiency = max(efficiency_scores, key=lambda x: x[1])
+                awards['benchwarmer'] = [{
+                    'team_id': best_efficiency[0]['team_id'],
+                    'team_name': best_efficiency[0]['team_name'],
+                    'manager_name': best_efficiency[0]['manager_name'],
+                    'points': best_efficiency[0]['gw_points'],
+                    'details': f'Fallback: Best efficiency ({best_efficiency[1]:.2f} points/£m)'
+                }]
+                print(f"Fallback Benchwarmer: {best_efficiency[0]['team_name']} with efficiency {best_efficiency[1]:.2f}")
+        
+        # Captain Fantastic: Team with best captain choice (approximate using overall performance)
+        if len(sorted_teams) > 2:
+            # Award to team with best improvement from previous week (if available)
+            # For now, award to team with second-highest points
+            captain_winner = sorted_teams[1] if len(sorted_teams) > 1 else sorted_teams[0]
+            awards['captain_fantastic'] = [{
+                'team_id': captain_winner['team_id'],
+                'team_name': captain_winner['team_name'],
+                'manager_name': captain_winner['manager_name'],
+                'points': captain_winner['gw_points'],
+                'details': 'Fallback: Strong gameweek performance'
+            }]
+            print(f"Fallback Captain Fantastic: {captain_winner['team_name']} with {captain_winner['gw_points']} points")
+        
+        print(f"Fallback awards created for gameweek {gameweek}")
         return awards
     
     def _check_player_data_availability(self, gameweek):
