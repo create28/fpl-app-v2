@@ -35,20 +35,19 @@ class FPLDataServer:
         Config.print_config()
         self.running = True
         
-        # Start periodic refresh thread
-        self.refresh_thread = threading.Thread(target=self.periodic_refresh, daemon=True)
-        self.refresh_thread.start()
-        print("Periodic refresh thread started")
-        
-        # Start web server
+        # Start web server FIRST (this is the main functionality)
+        print("Starting web server...")
         try:
             start_server(port)
         except KeyboardInterrupt:
-            print("\nShutting down server...")
+            print("\nReceived interrupt signal, shutting down...")
             self.stop()
         except Exception as e:
-            print(f"Error starting server: {e}")
+            print(f"Error starting web server: {e}")
             self.stop()
+        
+        # Note: The periodic refresh thread will start after web server is running
+        # but since start_server() blocks, this code won't execute until server stops
     
     def stop(self):
         """Stop the FPL Data Server."""

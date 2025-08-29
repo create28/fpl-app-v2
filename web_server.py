@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from data_processor import data_processor
@@ -167,6 +168,24 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
             elif path == '/':
                 # Serve the main HTML page
                 self.serve_static_file('index.html', 'text/html')
+            
+            elif path == '/health':
+                # Simple health check endpoint
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                
+                response = {
+                    'status': 'healthy',
+                    'service': 'FPL Data Server',
+                    'timestamp': str(datetime.now()),
+                    'endpoints': [
+                        '/api/current-gameweek',
+                        '/api/gameweeks',
+                        '/api/data/{gameweek}'
+                    ]
+                }
+                self.wfile.write(json.dumps(response).encode('utf-8'))
             
             elif path.startswith('/static/'):
                 # Serve static files from static directory
