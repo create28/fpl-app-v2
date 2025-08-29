@@ -1,8 +1,8 @@
 // Environment detection and API configuration
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 const API_BASE_URL = isProduction 
-    ? 'https://fpl-app-v2.onrender.com'  // Production (Render)
-    : 'http://localhost:8000';            // Local development
+    ? 'https://fpl-app-v2-sigma.onrender.com'  // Production (Render) - update this to your actual URL
+    : 'http://localhost:8000';                  // Local development
 
 console.log(`Environment: ${isProduction ? 'Production' : 'Local Development'}`);
 console.log(`API Base URL: ${API_BASE_URL}`);
