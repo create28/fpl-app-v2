@@ -92,26 +92,50 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'gameweeks': gameweeks})
             
             elif path == '/api/current-gameweek':
-                # Get current gameweek
+                # Get current gameweek with DB fallback when upstream blocks
                 current_gameweek = fpl_api.get_current_gameweek()
+                source = 'api'
+                if current_gameweek is None:
+                    # Fallback to DB's latest known gameweek
+                    try:
+                        gameweeks = db_manager.get_available_gameweeks()
+                        if gameweeks:
+                            current_gameweek = max(gameweeks)
+                            source = 'db_fallback'
+                    except Exception:
+                        pass
                 if current_gameweek is None:
                     self.send_json(500, {'status': 'error', 'message': 'Could not determine current gameweek'})
                 else:
-                    self.send_json(200, {'current_gameweek': current_gameweek})
+                    self.send_json(200, {'current_gameweek': current_gameweek, 'source': source})
             
             elif path == '/api/refresh-data':
-                # Refresh data for current gameweek
+                # Refresh data for current gameweek (fallback to inferred next GW if API blocked)
                 print("Getting current gameweek from FPL API...")
                 current_gameweek = fpl_api.get_current_gameweek()
                 print(f"Current gameweek result: {current_gameweek}")
+
+                inferred = False
+                if not current_gameweek:
+                    # Try to infer next GW from DB (max + 1) when API blocked (e.g., 403)
+                    try:
+                        gameweeks = db_manager.get_available_gameweeks()
+                        if gameweeks:
+                            current_gameweek = max(gameweeks) + 1
+                            inferred = True
+                            print(f"Inferred gameweek {current_gameweek} from DB fallback")
+                    except Exception:
+                        pass
                 
                 if current_gameweek:
                     success = self.refresh_gameweek_data(current_gameweek)
                     if success:
                         # Calculate awards after refresh
                         self.calculate_gameweek_awards(current_gameweek)
-                        
-                        self.send_json(200, {'status': 'success', 'message': f'Data refreshed for gameweek {current_gameweek}'})
+                        message = f"Data refreshed for gameweek {current_gameweek}"
+                        if inferred:
+                            message += " (inferred)"
+                        self.send_json(200, {'status': 'success', 'message': message})
                     else:
                         self.send_json(500, {'status': 'error', 'message': f'Failed to refresh data for gameweek {current_gameweek}'})
                 else:
