@@ -35,13 +35,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async function() {
+            const selectEl = document.getElementById('gameweekSelect');
+            const targetGW = selectEl && selectEl.value ? selectEl.value : null;
             // Disable button and show loading state
             refreshBtn.disabled = true;
             refreshStatus.textContent = 'Refreshing data...';
             refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/refresh-data`);
+                const url = targetGW ? `${API_BASE_URL}/api/refresh/${targetGW}` : `${API_BASE_URL}/api/refresh-data`;
+                const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.status === 'success') {
@@ -50,7 +53,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Wait a moment then refresh the page to show updated data
                     setTimeout(() => {
-                        location.reload();
+                        if (targetGW) {
+                            loadGameweekData(targetGW);
+                        } else {
+                            location.reload();
+                        }
                     }, 2000);
                 } else {
                     refreshStatus.textContent = result.message;

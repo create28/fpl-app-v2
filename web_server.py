@@ -79,8 +79,15 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                     self.send_error(500, f"Failed to calculate awards for gameweek {gameweek}")
             
             elif path.startswith('/api/gameweeks'):
-                # Get available gameweeks
+                # Get available gameweeks from DB and include current gameweek if newer
                 gameweeks = db_manager.get_available_gameweeks()
+                try:
+                    current_gameweek = fpl_api.get_current_gameweek()
+                    if current_gameweek and (current_gameweek not in gameweeks):
+                        gameweeks.append(current_gameweek)
+                        gameweeks = sorted(set(gameweeks))
+                except Exception:
+                    pass
                 
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
