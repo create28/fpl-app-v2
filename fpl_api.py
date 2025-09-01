@@ -79,9 +79,35 @@ class FPLAPI:
         bootstrap_data = self.get_bootstrap_static()
         if bootstrap_data and 'events' in bootstrap_data:
             events = bootstrap_data['events']
-            current_event = next((event for event in events if event['is_current']), None)
+            print(f"Found {len(events)} events in bootstrap data")
+            
+            # First try to find current gameweek
+            current_event = next((event for event in events if event.get('is_current')), None)
             if current_event:
+                print(f"Found current gameweek: {current_event['id']}")
                 return current_event['id']
+            
+            # If no current event, find the next upcoming one
+            next_event = next((event for event in events if event.get('is_next')), None)
+            if next_event:
+                print(f"No current gameweek, using next: {next_event['id']}")
+                return next_event['id']
+            
+            # If neither current nor next, find the latest finished one
+            finished_events = [event for event in events if event.get('finished')]
+            if finished_events:
+                latest_finished = max(finished_events, key=lambda x: x['id'])
+                print(f"Using latest finished gameweek: {latest_finished['id']}")
+                return latest_finished['id']
+            
+            # Fallback to first event
+            if events:
+                print(f"Fallback to first gameweek: {events[0]['id']}")
+                return events[0]['id']
+        
+        print("No gameweek data found in bootstrap")
+        if self.last_error:
+            print(f"Last API error: {self.last_error}")
         return None
     
     def get_league_id_from_team(self, team_id):

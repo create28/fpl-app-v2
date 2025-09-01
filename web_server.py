@@ -101,7 +101,10 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
             
             elif path == '/api/refresh-data':
                 # Refresh data for current gameweek
+                print("Getting current gameweek from FPL API...")
                 current_gameweek = fpl_api.get_current_gameweek()
+                print(f"Current gameweek result: {current_gameweek}")
+                
                 if current_gameweek:
                     success = self.refresh_gameweek_data(current_gameweek)
                     if success:
@@ -112,7 +115,10 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                     else:
                         self.send_json(500, {'status': 'error', 'message': f'Failed to refresh data for gameweek {current_gameweek}'})
                 else:
-                    self.send_json(500, {'status': 'error', 'message': 'Could not determine current gameweek'})
+                    error_msg = 'Could not determine current gameweek'
+                    if fpl_api.last_error:
+                        error_msg += f' (API error: {fpl_api.last_error})'
+                    self.send_json(500, {'status': 'error', 'message': error_msg})
             
             elif path.startswith('/api/fetch-players/'):
                 # Fetch player data for a specific gameweek (manual trigger)
