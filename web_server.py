@@ -271,14 +271,11 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 try:
                     # Save standings
                     db_manager.save_fpl_data(gameweek, standings)
-                    # Save awards if provided
-                    if awards and isinstance(awards, dict):
-                        db_manager.save_award_winners(gameweek, awards)
-                        awards_msg = 'awards imported'
-                    else:
-                        # Auto-calculate awards if not provided
-                        calc_ok = self.calculate_gameweek_awards(gameweek)
-                        awards_msg = 'awards calculated' if calc_ok else 'awards calculation failed'
+                    
+                    # Always calculate all awards (overwrite any provided awards)
+                    calc_ok = self.calculate_gameweek_awards(gameweek)
+                    awards_msg = 'all 6 awards calculated' if calc_ok else 'awards calculation failed'
+                    
                     self.send_json(200, {'status': 'success', 'message': f'Data imported for gameweek {gameweek} ({awards_msg})'})
                 except Exception as e:
                     print(f"Error importing data for GW{gameweek}: {e}")

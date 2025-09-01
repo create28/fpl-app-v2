@@ -5,32 +5,47 @@ class AwardsCalculator:
         pass
     
     def calculate_basic_awards(self, teams, gameweek):
-        """Calculate basic awards (weekly champion, wooden spoon)."""
+        """Calculate basic awards (weekly champion, wooden spoon, performance of the week)."""
         if not teams:
             return {}
+        
+        awards = {}
         
         # Weekly Champion (highest gameweek points)
         max_points = max(team['gw_points'] for team in teams)
         weekly_champions = [team for team in teams if team['gw_points'] == max_points]
+        awards['weekly_champion'] = [{
+            'team_id': champ['team_id'],
+            'team_name': champ['team_name'],
+            'manager_name': champ['manager_name'],
+            'points': champ['gw_points']
+        } for champ in weekly_champions]
+        print(f"Weekly Champion: {[w['team_name'] for w in awards['weekly_champion']]} with {max_points} points")
         
         # Wooden Spoon (lowest gameweek points)
         min_points = min(team['gw_points'] for team in teams)
         wooden_spoons = [team for team in teams if team['gw_points'] == min_points]
+        awards['wooden_spoon'] = [{
+            'team_id': spoon['team_id'],
+            'team_name': spoon['team_name'],
+            'manager_name': spoon['manager_name'],
+            'points': spoon['gw_points']
+        } for spoon in wooden_spoons]
+        print(f"Wooden Spoon: {[w['team_name'] for w in awards['wooden_spoon']]} with {min_points} points")
         
-        return {
-            'weekly_champion': [{
-                'team_id': champ['team_id'],
-                'team_name': champ['team_name'],
-                'manager_name': champ['manager_name'],
-                'points': champ['gw_points']
-            } for champ in weekly_champions],
-            'wooden_spoon': [{
-                'team_id': spoon['team_id'],
-                'team_name': spoon['team_name'],
-                'manager_name': spoon['manager_name'],
-                'points': spoon['gw_points']
-            } for spoon in wooden_spoons]
-        }
+        # Performance of the Week: Greatest improvement from previous gameweek
+        if gameweek > 1:
+            # Get previous gameweek data from database
+            prev_data = db_manager.get_fpl_data(gameweek - 1)
+            if prev_data:
+                performance_winners = self.calculate_performance_of_week(gameweek, teams, prev_data)
+                if performance_winners:
+                    awards['performance_of_week'] = performance_winners
+                    print(f"Performance of the Week: {len(performance_winners)} winner(s)")
+            else:
+                print("No previous gameweek data available for Performance of the Week")
+        
+        return awards
     
     def calculate_performance_of_week(self, gameweek, current_data, previous_data):
         """Calculate Performance of the Week based on gw_points delta from previous week."""
