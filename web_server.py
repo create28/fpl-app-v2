@@ -233,6 +233,58 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"Error handling request: {e}")
             self.send_json(500, {'status': 'error', 'message': f'Internal server error: {str(e)}'})
+
+    def do_POST(self):
+        """Handle POST requests (import endpoints)."""
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        print(f"Received POST request for path: {path}")
+
+        try:
+            if path.startswith('/api/import-data/'):
+                # Import standings and optional awards for a gameweek
+                try:
+                    gameweek = int(path.split('/')[-1])
+                except Exception:
+                    self.send_json(400, {'status': 'error', 'message': 'Invalid gameweek in path'})
+                    return
+
+                content_length = int(self.headers.get('Content-Length', 0))
+                if content_length <= 0:
+                    self.send_json(400, {'status': 'error', 'message': 'Empty request body'})
+                    return
+
+                raw_body = self.rfile.read(content_length)
+                try:
+                    payload = json.loads(raw_body.decode('utf-8'))
+                except Exception:
+                    self.send_json(400, {'status': 'error', 'message': 'Request body must be valid JSON'})
+                    return
+
+                standings = payload.get('standings')
+                awards = payload.get('awards')
+
+                if not standings or not isinstance(standings, list):
+                    self.send_json(400, {'status': 'error', 'message': 'Payload must include a standings array'})
+                    return
+
+                try:
+                    # Save standings
+                    db_manager.save_fpl_data(gameweek, standings)
+                    # Save awards if provided
+                    if awards and isinstance(awards, dict):
+                        db_manager.save_award_winners(gameweek, awards)
+                    self.send_json(200, {'status': 'success', 'message': f'Data imported for gameweek {gameweek}'})
+                except Exception as e:
+                    print(f"Error importing data for GW{gameweek}: {e}")
+                    self.send_json(500, {'status': 'error', 'message': f'Failed to import data: {str(e)}'})
+                return
+
+            else:
+                self.send_json(404, {'status': 'error', 'message': 'Endpoint not found'})
+        except Exception as e:
+            print(f"Error handling POST request: {e}")
+            self.send_json(500, {'status': 'error', 'message': f'Internal server error: {str(e)}'})
     
     def serve_static_file(self, file_path, content_type):
         """Serve a static file."""
