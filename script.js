@@ -172,24 +172,47 @@ function loadGameweekData(gameweek) {
         .then(response => response.json())
         .then(data => {
             console.log('Received data:', data);
-            if (data) {
+            if (data && data.standings) {
                 updateTable(data.standings);
                 updateAwards(data.awards);
+            } else if (data && data.status === 'error') {
+                // Show empty state for no data
+                updateTable([]);
+                updateAwards({});
+                console.log(`No data available for gameweek ${gameweek}: ${data.message}`);
+            } else {
+                updateTable([]);
+                updateAwards({});
             }
         })
         .catch(error => {
             console.error('Error loading gameweek data:', error);
+            updateTable([]);
+            updateAwards({});
         });
 }
 
 // Update table with data
 function updateTable(data) {
     console.log('updateTable called with data:', data);
-    console.log('Data length:', data.length);
     
     const tbody = document.querySelector('#standingsTable tbody');
     tbody.innerHTML = '';
 
+    // Handle empty data case
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                No data available for this gameweek. Try refreshing the data.
+            </td>
+        `;
+        tbody.appendChild(row);
+        return;
+    }
+
+    console.log('Data length:', data.length);
+    
     // Sort data by total points (descending)
     const sortedData = [...data].sort((a, b) => b.total_points - a.total_points);
     console.log('Sorted data length:', sortedData.length);

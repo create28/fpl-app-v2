@@ -261,7 +261,10 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
             # Fetch league standings
             standings = fpl_api.get_league_standings(league_id)
             if not standings:
-                print("Failed to fetch league standings")
+                error_msg = "Failed to fetch league standings"
+                if fpl_api.last_error:
+                    error_msg += f" (API error: {fpl_api.last_error})"
+                print(error_msg)
                 return False
             
             # Process and save data
