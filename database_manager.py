@@ -181,6 +181,10 @@ class DatabaseManager:
                 })
             
             return awards
+
+    # Back-compat alias used by exporter script
+    def get_award_winners(self, gameweek):
+        return self.get_awards(gameweek)
     
     def get_previous_gameweek_data(self, gameweek):
         """Get data from the previous gameweek for rank change calculations."""
