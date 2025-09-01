@@ -133,37 +133,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize gameweek data
 function initializeGameweekData() {
-    // Get current gameweek
-                fetch(`${API_BASE_URL}/api/current-gameweek`)
-        .then(response => response.json())
+    const select = document.getElementById('gameweekSelect');
+    // First load available gameweeks
+    fetch(`${API_BASE_URL}/api/gameweeks`)
+        .then(r => r.json())
         .then(data => {
-            const currentGW = data.current_gameweek;
-            
-            // Populate gameweek selector
-            const select = document.getElementById('gameweekSelect');
+            const gameweeks = Array.isArray(data.gameweeks) ? data.gameweeks : [];
             if (select) {
-                // Get available gameweeks
-                fetch(`${API_BASE_URL}/api/gameweeks`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const gameweeks = data.gameweeks; // Extract the gameweeks array from the response
-                        select.innerHTML = '<option value="">Select Gameweek</option>';
-                        gameweeks.forEach(gw => {
-                            const option = document.createElement('option');
-                            option.value = gw;
-                            option.textContent = `Gameweek ${gw}`;
-                            if (gw === currentGW) {
-                                option.selected = true;
-                                // Load data for current gameweek
-                                loadGameweekData(gw);
-                            }
-                            select.appendChild(option);
-                        });
-                    })
-                    .catch(error => console.error('Error loading gameweeks:', error));
+                select.innerHTML = '<option value="">Select Gameweek</option>';
+                gameweeks.forEach(gw => {
+                    const option = document.createElement('option');
+                    option.value = gw;
+                    option.textContent = `Gameweek ${gw}`;
+                    select.appendChild(option);
+                });
+            }
+
+            // Try to get current gameweek; fallback to highest available
+            return fetch(`${API_BASE_URL}/api/current-gameweek`)
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(d => ({ current: d.current_gameweek, gameweeks }))
+                .catch(() => ({ current: (gameweeks.length ? Math.max(...gameweeks) : null), gameweeks }));
+        })
+        .then(({ current, gameweeks }) => {
+            if (!current && gameweeks.length) current = Math.max(...gameweeks);
+            if (current && select) {
+                select.value = String(current);
+                loadGameweekData(current);
             }
         })
-        .catch(error => console.error('Error loading current gameweek:', error));
+        .catch(err => console.error('Initialization error:', err));
 }
 
 // Load gameweek data

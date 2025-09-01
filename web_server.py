@@ -79,16 +79,25 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                     self.send_json(500, {'status': 'error', 'message': f'Failed to calculate awards for gameweek {gameweek}'})
             
             elif path.startswith('/api/gameweeks'):
-                # Get available gameweeks from DB and include current gameweek if newer
+                # Get available gameweeks from DB and include current or inferred next GW
                 gameweeks = db_manager.get_available_gameweeks()
                 try:
                     current_gameweek = fpl_api.get_current_gameweek()
                     if current_gameweek and (current_gameweek not in gameweeks):
                         gameweeks.append(current_gameweek)
-                        gameweeks = sorted(set(gameweeks))
+                except Exception:
+                    current_gameweek = None
+                
+                # If API blocked and we have DB data, infer next GW to show in selector
+                try:
+                    if (not current_gameweek) and gameweeks:
+                        inferred_next = max(gameweeks) + 1
+                        if inferred_next not in gameweeks:
+                            gameweeks.append(inferred_next)
                 except Exception:
                     pass
                 
+                gameweeks = sorted(set(gameweeks))
                 self.send_json(200, {'gameweeks': gameweeks})
             
             elif path == '/api/current-gameweek':
