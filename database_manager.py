@@ -96,10 +96,14 @@ class DatabaseManager:
         """Save award winners for a specific gameweek."""
         with self.get_connection() as conn:
             c = conn.cursor()
+            # First, clear existing awards for this gameweek
+            c.execute('DELETE FROM award_winners WHERE gameweek = ?', (gameweek,))
+            
+            # Then insert all new awards
             for award_type, winners in awards_data.items():
                 if winners:
                     for winner in winners:
-                        c.execute('''INSERT OR REPLACE INTO award_winners
+                        c.execute('''INSERT INTO award_winners
                                      (gameweek, award_type, team_id, team_name, 
                                       manager_name, points, additional_data)
                                      VALUES (?, ?, ?, ?, ?, ?, ?)''',
