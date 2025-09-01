@@ -7,8 +7,14 @@ class FPLAPI:
     def __init__(self):
         self.base_url = "https://fantasy.premierleague.com/api"
         self.session = requests.Session()
-        # Disable SSL verification for development
+        # Identify politely to upstream and improve compatibility
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (compatible; FPL-App/1.0; +https://github.com/create28/fpl-app-v2)'
+        })
+        # Disable SSL verification for development; consider enabling in production
         self.session.verify = False
+        # Store last error for diagnostics
+        self.last_error = None
         
     def fetch_data(self, endpoint, max_retries=3):
         """Fetch data from FPL API with retry logic."""
@@ -18,10 +24,19 @@ class FPLAPI:
             try:
                 response = self.session.get(url, timeout=30)
                 if response.status_code == 200:
+                    self.last_error = None
                     return response.json()
                 else:
-                    print(f"API request failed with status {response.status_code}: {url}")
+                    snippet = ''
+                    try:
+                        snippet = response.text[:200]
+                    except Exception:
+                        pass
+                    msg = f"status {response.status_code} for {url} :: {snippet}"
+                    self.last_error = msg
+                    print(f"API request failed: {msg}")
             except Exception as e:
+                self.last_error = str(e)
                 print(f"API request attempt {attempt + 1} failed: {e}")
                 if attempt < max_retries - 1:
                     print("Retrying...")

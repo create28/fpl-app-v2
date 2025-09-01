@@ -21,6 +21,23 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
         """Handle preflight CORS requests."""
         self.send_response(200)
         self.end_headers()
+
+    def send_json(self, status_code, payload):
+        """Send a JSON response with the given status code and payload."""
+        try:
+            self.send_response(status_code)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(payload).encode('utf-8'))
+        except Exception:
+            # As a last resort, avoid crashing the handler
+            try:
+                self.send_response(500)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(b'Internal Server Error')
+            except Exception:
+                pass
     def do_GET(self):
         """Handle GET requests."""
         parsed_url = urlparse(self.path)
@@ -36,17 +53,10 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 data = self.get_simple_data(gameweek)
                 
                 if data:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    
-                    # Convert data to JSON and send
-                    json_data = json.dumps(data, indent=2)
-                    self.wfile.write(json_data.encode('utf-8'))
-                    
+                    self.send_json(200, data)
                     print(f"Successfully sent data for gameweek {gameweek}")
                 else:
-                    self.send_error(404, f"No data found for gameweek {gameweek}")
+                    self.send_json(404, {'status': 'error', 'message': f'No data found for gameweek {gameweek}'})
             
             elif path.startswith('/api/refresh/'):
                 # Refresh data for a specific gameweek
@@ -54,14 +64,9 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 success = self.refresh_gameweek_data(gameweek)
                 
                 if success:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    
-                    response = {'status': 'success', 'message': f'Data refreshed for gameweek {gameweek}'}
-                    self.wfile.write(json.dumps(response).encode('utf-8'))
+                    self.send_json(200, {'status': 'success', 'message': f'Data refreshed for gameweek {gameweek}'})
                 else:
-                    self.send_error(500, f"Failed to refresh data for gameweek {gameweek}")
+                    self.send_json(500, {'status': 'error', 'message': f'Failed to refresh data for gameweek {gameweek}'})
             
             elif path.startswith('/api/calculate-awards/'):
                 # Calculate awards for a specific gameweek
@@ -69,14 +74,9 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 success = self.calculate_gameweek_awards(gameweek)
                 
                 if success:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    
-                    response = {'status': 'success', 'message': f'Awards calculated for gameweek {gameweek}'}
-                    self.wfile.write(json.dumps(response).encode('utf-8'))
+                    self.send_json(200, {'status': 'success', 'message': f'Awards calculated for gameweek {gameweek}'})
                 else:
-                    self.send_error(500, f"Failed to calculate awards for gameweek {gameweek}")
+                    self.send_json(500, {'status': 'error', 'message': f'Failed to calculate awards for gameweek {gameweek}'})
             
             elif path.startswith('/api/gameweeks'):
                 # Get available gameweeks from DB and include current gameweek if newer
@@ -89,23 +89,15 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
                 
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                
-                response = {'gameweeks': gameweeks}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                self.send_json(200, {'gameweeks': gameweeks})
             
             elif path == '/api/current-gameweek':
                 # Get current gameweek
                 current_gameweek = fpl_api.get_current_gameweek()
-                
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                
-                response = {'current_gameweek': current_gameweek}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                if current_gameweek is None:
+                    self.send_json(500, {'status': 'error', 'message': 'Could not determine current gameweek'})
+                else:
+                    self.send_json(200, {'current_gameweek': current_gameweek})
             
             elif path == '/api/refresh-data':
                 # Refresh data for current gameweek
@@ -116,16 +108,11 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                         # Calculate awards after refresh
                         self.calculate_gameweek_awards(current_gameweek)
                         
-                        self.send_response(200)
-                        self.send_header('Content-type', 'application/json')
-                        self.end_headers()
-                        
-                        response = {'status': 'success', 'message': f'Data refreshed for gameweek {current_gameweek}'}
-                        self.wfile.write(json.dumps(response).encode('utf-8'))
+                        self.send_json(200, {'status': 'success', 'message': f'Data refreshed for gameweek {current_gameweek}'})
                     else:
-                        self.send_error(500, f"Failed to refresh data for gameweek {current_gameweek}")
+                        self.send_json(500, {'status': 'error', 'message': f'Failed to refresh data for gameweek {current_gameweek}'})
                 else:
-                    self.send_error(500, "Could not determine current gameweek")
+                    self.send_json(500, {'status': 'error', 'message': 'Could not determine current gameweek'})
             
             elif path.startswith('/api/fetch-players/'):
                 # Fetch player data for a specific gameweek (manual trigger)
@@ -136,26 +123,16 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                     # Recalculate awards now that we have player data
                     self.calculate_gameweek_awards(gameweek)
                     
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    
-                    response = {'status': 'success', 'message': f'Player data fetched for gameweek {gameweek}. Awards recalculated.'}
-                    self.wfile.write(json.dumps(response).encode('utf-8'))
+                    self.send_json(200, {'status': 'success', 'message': f'Player data fetched for gameweek {gameweek}. Awards recalculated.'})
                 else:
-                    self.send_error(500, f"Failed to fetch player data for gameweek {gameweek}")
+                    self.send_json(500, {'status': 'error', 'message': f'Failed to fetch player data for gameweek {gameweek}'})
             
             elif path.startswith('/api/check-players/'):
                 # Check player performance data availability
                 gameweek = int(path.split('/')[-1])
                 availability = self.check_player_data_availability(gameweek)
                 
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                
-                response = {'gameweek': gameweek, 'availability': availability}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                self.send_json(200, {'gameweek': gameweek, 'availability': availability})
             
             elif path.startswith('/api/bulk-fetch-players/'):
                 # Bulk fetch player performance data
@@ -163,14 +140,9 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 success = self.bulk_fetch_player_data(gameweek)
                 
                 if success:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'application/json')
-                    self.end_headers()
-                    
-                    response = {'status': 'success', 'message': f'Player data fetched for gameweek {gameweek}'}
-                    self.wfile.write(json.dumps(response).encode('utf-8'))
+                    self.send_json(200, {'status': 'success', 'message': f'Player data fetched for gameweek {gameweek}'})
                 else:
-                    self.send_error(500, f"Failed to fetch player data for gameweek {gameweek}")
+                    self.send_json(500, {'status': 'error', 'message': f'Failed to fetch player data for gameweek {gameweek}'})
             
             elif path == '/':
                 # Serve the main HTML page
@@ -217,11 +189,11 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 self.serve_static_file(path[1:], 'text/css')
             
             else:
-                self.send_error(404, 'Endpoint not found')
+                self.send_json(404, {'status': 'error', 'message': 'Endpoint not found'})
         
         except Exception as e:
             print(f"Error handling request: {e}")
-            self.send_error(500, f'Internal server error: {str(e)}')
+            self.send_json(500, {'status': 'error', 'message': f'Internal server error: {str(e)}'})
     
     def serve_static_file(self, file_path, content_type):
         """Serve a static file."""

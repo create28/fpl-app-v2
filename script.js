@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const url = targetGW ? `${API_BASE_URL}/api/refresh/${targetGW}` : `${API_BASE_URL}/api/refresh-data`;
                 const response = await fetch(url);
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                }
                 const result = await response.json();
                 
                 if (result.status === 'success') {
