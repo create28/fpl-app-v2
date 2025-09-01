@@ -295,20 +295,21 @@ class AwardsCalculator:
         return None
     
     def _calculate_captain_points(self, detailed_data):
-        """Calculate Captain Fantastic points."""
+        """Calculate Captain Fantastic points (raw captain points, not multiplied)."""
         for player in detailed_data['starting_xi']:
             if player['is_captain']:
                 base_points = player['gw_points']
-                # Both regular captain and triple captain use 2x multiplier
-                captain_points = base_points * 2
+                # For Captain Fantastic, we want the raw points of the captain
+                # (the award goes to highest scoring captain, not highest captain score)
                 if detailed_data.get('chips_used') == '3xc':  # Triple captain
-                    details = f"3x Captain: {base_points} × 2 = {captain_points}"
+                    details = f"3x Captain: {player['name']} scored {base_points} points"
                 else:
-                    details = f"Captain: {base_points} × 2 = {captain_points}"
+                    details = f"Captain: {player['name']} scored {base_points} points"
                 
                 return {
-                    'total': captain_points,
-                    'details': details
+                    'total': base_points,  # Raw captain points for comparison
+                    'details': details,
+                    'player_name': player['name']
                 }
         return None
 
