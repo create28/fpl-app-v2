@@ -237,7 +237,7 @@ function updateTable(data) {
     if (!data || !Array.isArray(data) || data.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                 No data available for this gameweek. Try refreshing the data.
             </td>
         `;
@@ -307,8 +307,6 @@ function updateTable(data) {
             <td class="px-6 py-4 border-b border-indigo-100 text-sm">${awardsHtml}</td>
             <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">${team.gw_points}${previousScore}</td>
             <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">${team.total_points}</td>
-            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">£${team.team_value.toFixed(1)}m</td>
-            <td class="px-6 py-4 border-b border-indigo-100 text-sm text-slate-900">£${team.bank_balance.toFixed(1)}m</td>
         `;
         
         tbody.appendChild(row);
