@@ -97,9 +97,9 @@ class AwardsCalculator:
         # Check if we have any player performance data for this gameweek
         has_player_data = self._check_player_data_availability(gameweek)
         if not has_player_data:
-            print(f"No player performance data available for gameweek {gameweek}, creating fallback awards")
-            # Create fallback awards based on team performance
-            return self._create_fallback_awards(teams_data, gameweek)
+            print(f"No player performance data available for gameweek {gameweek}, returning empty awards")
+            # Return empty awards when no player data is available
+            return {}
         
         for i, team in enumerate(teams_data):
             team_id = team['team_id']
@@ -113,7 +113,7 @@ class AwardsCalculator:
             
             # Calculate The Wall award (GKP + DEF points from starting XI positions 1-11)
             wall_points = self._calculate_wall_points(detailed_data)
-            if wall_points:
+            if wall_points and wall_points['total'] > 0:
                 wall_scores.append({
                     'team_id': team_id,
                     'team_name': team['team_name'],
@@ -167,75 +167,6 @@ class AwardsCalculator:
         print(f"Award calculation complete for gameweek {gameweek}")
         return awards
     
-    def _create_fallback_awards(self, teams_data, gameweek):
-        """Create fallback awards when player performance data is not available."""
-        print(f"Creating fallback awards for gameweek {gameweek}")
-        
-        # Sort teams by gameweek points
-        sorted_teams = sorted(teams_data, key=lambda x: x['gw_points'], reverse=True)
-        
-        awards = {}
-        
-        # The Wall: Best defensive performance (lowest goals conceded, or highest clean sheet bonus)
-        # Since we don't have detailed data, award to team with highest gameweek points
-        if sorted_teams:
-            wall_winner = sorted_teams[0]
-            awards['the_wall'] = [{
-                'team_id': wall_winner['team_id'],
-                'team_name': wall_winner['team_name'],
-                'manager_name': wall_winner['manager_name'],
-                'points': wall_winner['gw_points'],
-                'details': 'Fallback: Highest gameweek points'
-            }]
-            print(f"Fallback The Wall: {wall_winner['team_name']} with {wall_winner['gw_points']} points")
-        
-        # Benchwarmer: Team with most points from bench (approximate using team value efficiency)
-        if len(sorted_teams) >= 1:
-            # Find team with best points-to-value ratio (efficient use of budget)
-            efficiency_scores = []
-            for team in teams_data:
-                if team['team_value'] > 0:
-                    efficiency = team['gw_points'] / team['team_value']
-                    efficiency_scores.append((team, efficiency))
-            
-            if efficiency_scores:
-                best_efficiency = max(efficiency_scores, key=lambda x: x[1])
-                awards['benchwarmer'] = [{
-                    'team_id': best_efficiency[0]['team_id'],
-                    'team_name': best_efficiency[0]['team_name'],
-                    'manager_name': best_efficiency[0]['manager_name'],
-                    'points': best_efficiency[0]['gw_points'],
-                    'details': f'Fallback: Best efficiency ({best_efficiency[1]:.2f} points/£m)'
-                }]
-                print(f"Fallback Benchwarmer: {best_efficiency[0]['team_name']} with efficiency {best_efficiency[1]:.2f}")
-            else:
-                # Fallback when no team values available - award to team with lowest gameweek points (benchwarmer concept)
-                benchwarmer_winner = min(teams_data, key=lambda x: x['gw_points'])
-                awards['benchwarmer'] = [{
-                    'team_id': benchwarmer_winner['team_id'],
-                    'team_name': benchwarmer_winner['team_name'],
-                    'manager_name': benchwarmer_winner['manager_name'],
-                    'points': benchwarmer_winner['gw_points'],
-                    'details': 'Fallback: Lowest gameweek points (benchwarmer concept)'
-                }]
-                print(f"Fallback Benchwarmer: {benchwarmer_winner['team_name']} with {benchwarmer_winner['gw_points']} points")
-        
-        # Captain Fantastic: Team with best captain choice (approximate using overall performance)
-        if len(sorted_teams) >= 1:
-            # Award to team with best improvement from previous week (if available)
-            # For now, award to team with second-highest points
-            captain_winner = sorted_teams[1] if len(sorted_teams) > 1 else sorted_teams[0]
-            awards['captain_fantastic'] = [{
-                'team_id': captain_winner['team_id'],
-                'team_name': captain_winner['team_name'],
-                'manager_name': captain_winner['manager_name'],
-                'points': captain_winner['gw_points'],
-                'details': 'Fallback: Strong gameweek performance'
-            }]
-            print(f"Fallback Captain Fantastic: {captain_winner['team_name']} with {captain_winner['gw_points']} points")
-        
-        print(f"Fallback awards created for gameweek {gameweek}")
-        return awards
     
     def _check_player_data_availability(self, gameweek):
         """Check if player performance data is available for a gameweek."""
@@ -321,22 +252,32 @@ class AwardsCalculator:
         return None
     
     def _calculate_captain_points(self, detailed_data):
-        """Calculate Captain Fantastic points (raw captain points, not multiplied)."""
+        """Calculate Captain Fantastic points (non-captain value, triple captain shows double value)."""
         for player in detailed_data['starting_xi']:
             if player['is_captain']:
                 base_points = player['gw_points']
-                # For Captain Fantastic, we want the raw points of the captain
-                # (the award goes to highest scoring captain, not highest captain score)
+                # For Captain Fantastic, we want the non-captain value
+                # Triple captain should show double value (not triple)
                 if detailed_data.get('chips_used') == '3xc':  # Triple captain
-                    details = f"3x Captain: {player['name']} scored {base_points} points"
+                    # Triple captain means 3x points, so non-captain value is base_points / 3
+                    # But we display double value (base_points * 2 / 3)
+                    non_captain_value = base_points / 3
+                    display_value = non_captain_value * 2  # Double value for display
+                    details = f"3x Captain: {player['name']} scored {base_points} points (non-captain: {non_captain_value:.1f}, display: {display_value:.1f})"
+                    return {
+                        'total': display_value,  # Display double value for triple captain
+                        'details': details,
+                        'player_name': player['name']
+                    }
                 else:
-                    details = f"Captain: {player['name']} scored {base_points} points"
-                
-                return {
-                    'total': base_points,  # Raw captain points for comparison
-                    'details': details,
-                    'player_name': player['name']
-                }
+                    # Regular captain means 2x points, so non-captain value is base_points / 2
+                    non_captain_value = base_points / 2
+                    details = f"Captain: {player['name']} scored {base_points} points (non-captain: {non_captain_value:.1f})"
+                    return {
+                        'total': non_captain_value,  # Non-captain value for regular captain
+                        'details': details,
+                        'player_name': player['name']
+                    }
         return None
 
 # Global awards calculator instance
