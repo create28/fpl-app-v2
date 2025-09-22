@@ -252,20 +252,18 @@ class AwardsCalculator:
         return None
     
     def _calculate_captain_points(self, detailed_data):
-        """Calculate Captain Fantastic points (non-captain value, triple captain shows double value)."""
+        """Calculate Captain Fantastic points (highest scoring captain)."""
         for player in detailed_data['starting_xi']:
             if player['is_captain']:
                 base_points = player['gw_points']
-                # For Captain Fantastic, we want the non-captain value
-                # Triple captain should show double value (not triple)
+                # For Captain Fantastic, we want the highest scoring captain (raw points)
+                # But display the non-captain value for reference
                 if detailed_data.get('chips_used') == '3xc':  # Triple captain
                     # Triple captain means 3x points, so non-captain value is base_points / 3
-                    # But we display double value (base_points * 2 / 3)
                     non_captain_value = base_points / 3
-                    display_value = non_captain_value * 2  # Double value for display
-                    details = f"3x Captain: {player['name']} scored {base_points} points (non-captain: {non_captain_value:.1f}, display: {display_value:.1f})"
+                    details = f"3x Captain: {player['name']} scored {base_points} points (non-captain: {non_captain_value:.1f})"
                     return {
-                        'total': display_value,  # Display double value for triple captain
+                        'total': base_points,  # Use raw captain points for comparison
                         'details': details,
                         'player_name': player['name']
                     }
@@ -274,7 +272,7 @@ class AwardsCalculator:
                     non_captain_value = base_points / 2
                     details = f"Captain: {player['name']} scored {base_points} points (non-captain: {non_captain_value:.1f})"
                     return {
-                        'total': non_captain_value,  # Non-captain value for regular captain
+                        'total': base_points,  # Use raw captain points for comparison
                         'details': details,
                         'player_name': player['name']
                     }

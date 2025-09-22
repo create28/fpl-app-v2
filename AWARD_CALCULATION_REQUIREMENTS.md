@@ -44,15 +44,16 @@ This document outlines the exact requirements for calculating FPL awards. **Fall
 - **Display**: Team name, manager name, total points, player breakdown
 
 ### 6. Captain Fantastic ⭐
-- **Calculation**: Team with the captain that scored the most points (display non-captain value)
+- **Calculation**: Team with the captain that scored the most points (raw captain points)
 - **Data Source**: Player performance data (REQUIRED)
 - **Requirements**:
   - Find the captain (is_captain = true)
-  - Calculate non-captain value:
+  - Use raw captain points for comparison (not non-captain value)
+  - Display non-captain value in details for reference:
     - Regular captain: base_points / 2
-    - Triple captain: base_points / 3, but display as (base_points / 3) * 2
-  - Compare non-captain values across teams
-- **Display**: Team name, manager name, non-captain value, captain details
+    - Triple captain: base_points / 3
+  - Compare raw captain points across teams
+- **Display**: Team name, manager name, raw captain points, captain details with non-captain value
 
 ## Data Requirements
 
