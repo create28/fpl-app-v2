@@ -94,10 +94,51 @@ Each player record must include:
 ## Workflow for New Gameweeks
 
 1. **Fetch basic team data** (automatic)
-2. **Download player performance data** (manual - use "Fetch Player Data" button)
+2. **Download player performance data for ALL teams** (manual - use "Fetch Player Data" button)
+   - ⚠️ **CRITICAL**: Must download data for ALL teams, not just a few
+   - Incomplete data will result in incorrect award winners
+   - Check that all teams have player data before calculating awards
 3. **Calculate basic awards** (Weekly Champion, Wooden Spoon, Performance of the Week)
 4. **Calculate detailed awards** (The Wall, Benchwarmer, Captain Fantastic) - only if player data exists
 5. **Display results** - show empty for detailed awards if no player data
+
+## Data Completeness Requirements
+
+### Before Calculating Awards
+- **Verify player data exists for ALL teams** in the gameweek
+- **Check database**: `SELECT COUNT(DISTINCT team_id) FROM player_performance WHERE gameweek = X`
+- **Expected count**: Should equal the number of teams in the league
+- **If incomplete**: Download missing player data before proceeding
+
+### Common Issues with Incomplete Data
+- **Captain Fantastic**: May show wrong winner if higher-scoring captains are missing
+- **The Wall**: May miss teams with better defensive performances
+- **Benchwarmer**: May miss teams with higher bench scores
+- **All awards**: Will be incorrect if data is incomplete
+
+### Validation Steps
+1. Count teams with player data: `SELECT COUNT(DISTINCT team_id) FROM player_performance WHERE gameweek = X`
+2. Count total teams: `SELECT COUNT(*) FROM fpl_data WHERE gameweek = X`
+3. Ensure counts match before calculating awards
+4. If counts don't match, download missing player data
+
+## Real Example: GW5 Data Completeness Issue
+
+### What Happened
+- **Initial data**: Only 3 teams had player data (45 players)
+- **Captain Fantastic result**: 3 teams tied with 5-point captains
+- **Missing data**: The Frequency FC had a 9-point captain but no player data
+- **Correct result**: mkdons won with 10-point captain (B.Fernandes)
+
+### The Fix
+- **Downloaded player data for ALL 17 teams** (255 players total)
+- **Recalculated awards** with complete data
+- **Result**: Correct winners identified
+
+### Key Lesson
+- **Incomplete data = Wrong winners**
+- **Always verify data completeness** before calculating awards
+- **Use validation steps** to ensure all teams have player data
 
 ## Common Issues to Avoid
 
@@ -106,6 +147,7 @@ Each player record must include:
 3. **Don't mix team-level and player-level calculations** - they're fundamentally different
 4. **Don't assume team_value data is available** - it's often 0 in the API
 5. **Don't use efficiency calculations as fallbacks** - they don't represent actual FPL performance
+6. **Don't calculate awards with incomplete player data** - always verify all teams have data first
 
 ## Future Maintenance
 
