@@ -190,7 +190,7 @@ class AwardsCalculator:
             print(f"Fallback The Wall: {wall_winner['team_name']} with {wall_winner['gw_points']} points")
         
         # Benchwarmer: Team with most points from bench (approximate using team value efficiency)
-        if len(sorted_teams) > 1:
+        if len(sorted_teams) >= 1:
             # Find team with best points-to-value ratio (efficient use of budget)
             efficiency_scores = []
             for team in teams_data:
@@ -208,9 +208,20 @@ class AwardsCalculator:
                     'details': f'Fallback: Best efficiency ({best_efficiency[1]:.2f} points/£m)'
                 }]
                 print(f"Fallback Benchwarmer: {best_efficiency[0]['team_name']} with efficiency {best_efficiency[1]:.2f}")
+            else:
+                # Fallback when no team values available - award to team with lowest gameweek points (benchwarmer concept)
+                benchwarmer_winner = min(teams_data, key=lambda x: x['gw_points'])
+                awards['benchwarmer'] = [{
+                    'team_id': benchwarmer_winner['team_id'],
+                    'team_name': benchwarmer_winner['team_name'],
+                    'manager_name': benchwarmer_winner['manager_name'],
+                    'points': benchwarmer_winner['gw_points'],
+                    'details': 'Fallback: Lowest gameweek points (benchwarmer concept)'
+                }]
+                print(f"Fallback Benchwarmer: {benchwarmer_winner['team_name']} with {benchwarmer_winner['gw_points']} points")
         
         # Captain Fantastic: Team with best captain choice (approximate using overall performance)
-        if len(sorted_teams) > 2:
+        if len(sorted_teams) >= 1:
             # Award to team with best improvement from previous week (if available)
             # For now, award to team with second-highest points
             captain_winner = sorted_teams[1] if len(sorted_teams) > 1 else sorted_teams[0]
