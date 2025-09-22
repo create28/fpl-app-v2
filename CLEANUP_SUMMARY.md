@@ -129,3 +129,4 @@ The `fpl_history.db` file is excluded via `.gitignore` since it contains:
    ```
 
 The folder is now clean and ready for version control!
+

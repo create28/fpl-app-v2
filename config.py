@@ -49,3 +49,4 @@ class Config:
         print(f"Database: {cls.DATABASE_PATH}")
         print(f"League ID: {cls.FPL_LEAGUE_ID}")
         print("=============================")
+

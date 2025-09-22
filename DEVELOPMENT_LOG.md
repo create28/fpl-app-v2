@@ -204,3 +204,4 @@ SELECT player_name, gw_points FROM player_performance WHERE gameweek = 2 LIMIT 5
 
 *Last Updated: January 2025*
 *Session Status: Debugging Phase - Player Performance Points Issue*
+
