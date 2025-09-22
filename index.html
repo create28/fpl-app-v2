@@ -156,6 +156,35 @@
     .award-content {
       font-size: 0.875rem;
     }
+
+    /* Tab functionality */
+    .tab-panel {
+      display: none;
+    }
+    
+    .tab-panel.active {
+      display: block;
+    }
+    
+    .tab-button {
+      position: relative;
+    }
+    
+    .tab-button.active {
+      background: linear-gradient(to right, #6366F1, #8B5CF6) !important;
+      color: white !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-button:not(.active) {
+      background: transparent;
+      color: #6B7280;
+    }
+    
+    .tab-button:not(.active):hover {
+      background: rgba(255, 255, 255, 0.5);
+      color: #6366F1;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
@@ -198,23 +227,34 @@
         <div id="fetchStatus" class="text-sm text-gray-600"></div>
       </div>
       
-      <!-- Horizontal Layout: Table and Awards Side by Side -->
-      <div class="horizontal-layout">
-        <!-- League Table (Left Side) -->
-        <div class="table-container">
-          <h2 class="text-2xl font-bold mb-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">📊 League Table</h2>
+      <!-- Tab Navigation -->
+      <div class="mb-8">
+        <div class="flex space-x-1 bg-white/80 backdrop-blur-sm rounded-xl p-1 shadow-lg border border-white/20">
+          <button id="tableTab" class="tab-button active flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+            📊 League Table
+          </button>
+          <button id="awardsTab" class="tab-button flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300 text-gray-600 hover:text-indigo-600 hover:bg-white/50">
+            🏆 Awards
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Table Tab Content -->
+        <div id="tableTabContent" class="tab-panel active">
           <div class="overflow-x-auto rounded-xl shadow-lg">
             <table id="standingsTable" class="w-full border-collapse bg-white/90 backdrop-blur-sm">
               <thead>
                 <tr class="bg-gradient-to-r from-indigo-100 to-purple-100">
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Rank</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Team</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Manager</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Awards</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">GW</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Total</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Value</th>
-                  <th class="px-4 py-3 text-left text-xs font-bold text-indigo-800 border-b-2 border-indigo-200">Bank</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Rank & Change</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Team Name</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Manager</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Awards</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">GW Points</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Total Points</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Team Value</th>
+                  <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Bank</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,67 +262,73 @@
               </tbody>
             </table>
           </div>
-        </div>
-        
-        <!-- Awards Section (Right Side) -->
-        <div class="awards-container">
-          <h2 class="text-2xl font-bold mb-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">🏆 Awards</h2>
           
-          <!-- Awards Grid - Optimized for Horizontal Layout -->
-          <div class="awards-grid-horizontal">
-            <div id="weekly-champion-card" class="group bg-gradient-to-br from-amber-400 via-orange-400 to-red-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-amber-300">
+          <!-- Table Screenshot Button -->
+          <div class="mt-6 text-center">
+            <button id="tableScreenshotBtn" class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-2xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg font-semibold">
+              📸 Download Table Screenshot
+            </button>
+          </div>
+        </div>
+
+        <!-- Awards Tab Content -->
+        <div id="awardsTabContent" class="tab-panel">
+          <!-- Awards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div id="weekly-champion-card" class="group bg-gradient-to-br from-amber-400 via-orange-400 to-red-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-amber-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">👑</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">Weekly Champion</h3>
+                <div class="text-4xl mb-3">👑</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">Weekly Champion</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
-            <div id="wooden-spoon-card" class="group bg-gradient-to-br from-red-400 via-pink-400 to-purple-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-red-300">
+            <div id="wooden-spoon-card" class="group bg-gradient-to-br from-red-400 via-pink-400 to-purple-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-red-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">🥄</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">Wooden Spoon</h3>
+                <div class="text-4xl mb-3">🥄</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">Wooden Spoon</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
-            <div id="gameweek-champion-card" class="group bg-gradient-to-br from-blue-400 via-indigo-400 to-purple-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-blue-300">
+            <div id="gameweek-champion-card" class="group bg-gradient-to-br from-blue-400 via-indigo-400 to-purple-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-blue-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">🚀</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">Performance of the Week</h3>
+                <div class="text-4xl mb-3">🚀</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">Performance of the Week</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
-            <div id="the-wall-card" class="group bg-gradient-to-br from-green-400 via-emerald-400 to-teal-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-green-300">
+            <div id="the-wall-card" class="group bg-gradient-to-br from-green-400 via-emerald-400 to-teal-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-green-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">🧱</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">The Wall</h3>
+                <div class="text-4xl mb-3">🧱</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">The Wall</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
-            <div id="benchwarmer-card" class="group bg-gradient-to-br from-purple-400 via-violet-400 to-indigo-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-purple-300">
+            <div id="benchwarmer-card" class="group bg-gradient-to-br from-purple-400 via-violet-400 to-indigo-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-purple-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">🪑</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">Benchwarmer</h3>
+                <div class="text-4xl mb-3">🪑</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">Benchwarmer</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
-            <div id="captain-fantastic-card" class="group bg-gradient-to-br from-pink-400 via-rose-400 to-red-400 award-card-horizontal rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-pink-300">
+            <div id="captain-fantastic-card" class="group bg-gradient-to-br from-pink-400 via-rose-400 to-red-400 p-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border-2 border-pink-300">
               <div class="text-center">
-                <div class="text-4xl mb-2">⭐</div>
-                <h3 class="text-xl font-bold text-white mb-3 drop-shadow-lg">Captain Fantastic</h3>
+                <div class="text-4xl mb-3">⭐</div>
+                <h3 class="text-xl font-bold text-white mb-4 drop-shadow-lg">Captain Fantastic</h3>
                 <div class="award-content text-white font-medium"></div>
               </div>
             </div>
+          </div>
+          
+          <!-- Awards Screenshot Button -->
+          <div class="mt-8 text-center">
+            <button id="awardsScreenshotBtn" class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-2xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg font-semibold">
+              📸 Download Awards Screenshot
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Screenshot Button -->
-    <div class="text-center">
-      <button id="screenshotBtn" class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-2xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg font-semibold">
-        📸 Download Screenshot
-      </button>
-    </div>
   </div>
 
   <!-- Link to external JavaScript file -->

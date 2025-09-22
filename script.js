@@ -23,10 +23,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Screenshot button event
-    const screenshotBtn = document.getElementById('screenshotBtn');
-    if (screenshotBtn) {
-        screenshotBtn.addEventListener('click', captureScreenshot);
+    // Tab switching functionality
+    const tableTab = document.getElementById('tableTab');
+    const awardsTab = document.getElementById('awardsTab');
+    const tableTabContent = document.getElementById('tableTabContent');
+    const awardsTabContent = document.getElementById('awardsTabContent');
+
+    if (tableTab && awardsTab) {
+        tableTab.addEventListener('click', function() {
+            // Switch to table tab
+            tableTab.classList.add('active');
+            awardsTab.classList.remove('active');
+            tableTabContent.classList.add('active');
+            awardsTabContent.classList.remove('active');
+        });
+
+        awardsTab.addEventListener('click', function() {
+            // Switch to awards tab
+            awardsTab.classList.add('active');
+            tableTab.classList.remove('active');
+            awardsTabContent.classList.add('active');
+            tableTabContent.classList.remove('active');
+        });
+    }
+
+    // Screenshot buttons
+    const tableScreenshotBtn = document.getElementById('tableScreenshotBtn');
+    const awardsScreenshotBtn = document.getElementById('awardsScreenshotBtn');
+    
+    if (tableScreenshotBtn) {
+        tableScreenshotBtn.addEventListener('click', function() {
+            captureScreenshot('table');
+        });
+    }
+    
+    if (awardsScreenshotBtn) {
+        awardsScreenshotBtn.addEventListener('click', function() {
+            captureScreenshot('awards');
+        });
     }
 
     // Manual refresh functionality
@@ -364,12 +398,26 @@ function updateAwards(awards) {
 }
 
 // Screenshot capture function
-function captureScreenshot() {
+function captureScreenshot(tabType = 'table') {
     const captureArea = document.getElementById('captureArea');
-    const screenshotBtn = document.getElementById('screenshotBtn');
+    let screenshotBtn;
+    let targetElement;
     
-    if (!captureArea) {
-        console.error('Capture area not found');
+    // Determine which button and element to capture based on tab type
+    if (tabType === 'table') {
+        screenshotBtn = document.getElementById('tableScreenshotBtn');
+        targetElement = document.getElementById('tableTabContent');
+    } else if (tabType === 'awards') {
+        screenshotBtn = document.getElementById('awardsScreenshotBtn');
+        targetElement = document.getElementById('awardsTabContent');
+    } else {
+        // Fallback to full capture area
+        screenshotBtn = document.getElementById('tableScreenshotBtn');
+        targetElement = captureArea;
+    }
+    
+    if (!targetElement || !screenshotBtn) {
+        console.error('Target element or screenshot button not found');
         return;
     }
 
@@ -379,11 +427,13 @@ function captureScreenshot() {
     screenshotBtn.disabled = true;
 
     // Add screenshot mode class to simplify rendering
-    captureArea.classList.add('screenshot-mode');
+    if (captureArea) {
+        captureArea.classList.add('screenshot-mode');
+    }
     
     // Wait for styles to apply
     setTimeout(() => {
-        html2canvas(captureArea, {
+        html2canvas(targetElement, {
             backgroundColor: '#ffffff',
             scale: 1.5,
             useCORS: true,
@@ -393,16 +443,18 @@ function captureScreenshot() {
             foreignObjectRendering: false,
             imageTimeout: 15000
         }).then(canvas => {
-            console.log('Screenshot captured successfully');
+            console.log(`${tabType} screenshot captured successfully`);
             
             // Remove screenshot mode class
-            captureArea.classList.remove('screenshot-mode');
+            if (captureArea) {
+                captureArea.classList.remove('screenshot-mode');
+            }
 
             // Create download link
             const link = document.createElement('a');
             const gameweekSelect = document.getElementById('gameweekSelect');
             const currentGameweek = gameweekSelect ? gameweekSelect.value : 'unknown';
-            link.download = `fpl-standings-gw${currentGameweek}.png`;
+            link.download = `fpl-${tabType}-gw${currentGameweek}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
 
@@ -413,7 +465,9 @@ function captureScreenshot() {
             console.error('Screenshot error:', error);
             
             // Remove screenshot mode class on error
-            captureArea.classList.remove('screenshot-mode');
+            if (captureArea) {
+                captureArea.classList.remove('screenshot-mode');
+            }
 
             // Restore button
             screenshotBtn.innerHTML = originalText;
