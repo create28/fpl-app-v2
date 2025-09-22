@@ -426,6 +426,14 @@ function captureScreenshot(tabType = 'table') {
     screenshotBtn.innerHTML = '📸 Capturing...';
     screenshotBtn.disabled = true;
 
+    // Update gameweek numbers in screenshot titles
+    const gameweekSelect = document.getElementById('gameweekSelect');
+    const currentGameweek = gameweekSelect ? gameweekSelect.value : 'unknown';
+    const gameweekNumbers = document.querySelectorAll('.gameweek-number');
+    gameweekNumbers.forEach(element => {
+        element.textContent = currentGameweek;
+    });
+
     // Add screenshot mode class to simplify rendering
     if (captureArea) {
         captureArea.classList.add('screenshot-mode');
