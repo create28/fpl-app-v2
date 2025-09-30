@@ -437,18 +437,23 @@ function captureScreenshot(tabType = 'table') {
         captureArea.classList.add('screenshot-mode');
     }
     
-    // Wait for styles to apply
-    setTimeout(() => {
-        html2canvas(targetElement, {
-            backgroundColor: '#ffffff',
-            scale: 1.5,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            removeContainer: true,
-            foreignObjectRendering: false,
-            imageTimeout: 15000
-        }).then(canvas => {
+    // Wait for styles and webfonts to apply, then use html-to-image
+    const waitForFonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    Promise.resolve(waitForFonts).then(() => new Promise(r => setTimeout(r, 200))).then(() => {
+        const pixelRatio = Math.max(window.devicePixelRatio || 1, 2);
+        const width = targetElement.scrollWidth;
+        const height = targetElement.scrollHeight;
+        window.htmlToImage.toPng(targetElement, {
+            pixelRatio,
+            cacheBust: true,
+            backgroundColor: null,
+            width,
+            height,
+            style: {
+                transform: 'none',
+                filter: 'none'
+            }
+        }).then(dataUrl => {
             console.log(`${tabType} screenshot captured successfully`);
             
             // Remove screenshot mode class
@@ -461,7 +466,7 @@ function captureScreenshot(tabType = 'table') {
             const gameweekSelect = document.getElementById('gameweekSelect');
             const currentGameweek = gameweekSelect ? gameweekSelect.value : 'unknown';
             link.download = `fpl-${tabType}-gw${currentGameweek}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
+            link.href = dataUrl;
             link.click();
 
             // Restore button
@@ -479,5 +484,5 @@ function captureScreenshot(tabType = 'table') {
             screenshotBtn.innerHTML = originalText;
             screenshotBtn.disabled = false;
         });
-    }, 200);
+    });
 }
