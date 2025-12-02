@@ -2,7 +2,27 @@ from database_manager import db_manager
 
 class AwardsCalculator:
     def __init__(self):
-        pass
+        # Teams that should be excluded from all award calculations
+        # (AI/bot teams, secondary fun teams, etc.)
+        self.excluded_team_names = {
+            "AI Chris",
+            "AI-DH-To-The-Moon",
+            "The VibeKIngs",
+        }
+        self.excluded_manager_names = {
+            "AI-Daan Hekking",
+        }
+    
+    def _is_excluded_team(self, team):
+        """Return True if this team should not be considered for awards."""
+        if not team:
+            return False
+        team_name = team.get('team_name', '')
+        manager_name = team.get('manager_name', '')
+        return (
+            team_name in self.excluded_team_names
+            or manager_name in self.excluded_manager_names
+        )
     
     def calculate_basic_awards(self, teams, gameweek):
         """Calculate basic awards (weekly champion, wooden spoon, performance of the week)."""
@@ -11,9 +31,15 @@ class AwardsCalculator:
         
         awards = {}
         
+        # Filter out excluded teams for award purposes
+        eligible_teams = [t for t in teams if not self._is_excluded_team(t)]
+        if not eligible_teams:
+            print("No eligible teams for basic awards after exclusions")
+            return awards
+        
         # Weekly Champion (highest gameweek points)
-        max_points = max(team['gw_points'] for team in teams)
-        weekly_champions = [team for team in teams if team['gw_points'] == max_points]
+        max_points = max(team['gw_points'] for team in eligible_teams)
+        weekly_champions = [team for team in eligible_teams if team['gw_points'] == max_points]
         awards['weekly_champion'] = [{
             'team_id': champ['team_id'],
             'team_name': champ['team_name'],
@@ -23,8 +49,8 @@ class AwardsCalculator:
         print(f"Weekly Champion: {[w['team_name'] for w in awards['weekly_champion']]} with {max_points} points")
         
         # Wooden Spoon (lowest gameweek points)
-        min_points = min(team['gw_points'] for team in teams)
-        wooden_spoons = [team for team in teams if team['gw_points'] == min_points]
+        min_points = min(team['gw_points'] for team in eligible_teams)
+        wooden_spoons = [team for team in eligible_teams if team['gw_points'] == min_points]
         awards['wooden_spoon'] = [{
             'team_id': spoon['team_id'],
             'team_name': spoon['team_name'],
@@ -52,8 +78,11 @@ class AwardsCalculator:
         if not previous_data:
             return []
         
-        # Filter out teams with 0 points in current gameweek
-        valid_current_teams = [team for team in current_data if team['gw_points'] > 0]
+        # Filter out teams with 0 points in current gameweek and any excluded teams
+        valid_current_teams = [
+            team for team in current_data
+            if team['gw_points'] > 0 and not self._is_excluded_team(team)
+        ]
         if not valid_current_teams:
             return []
         
@@ -102,6 +131,10 @@ class AwardsCalculator:
             return {}
         
         for i, team in enumerate(teams_data):
+            # Skip excluded teams when calculating detailed awards
+            if self._is_excluded_team(team):
+                print(f"Skipping excluded team for detailed awards: {team['team_name']}")
+                continue
             team_id = team['team_id']
             print(f"Processing team {i+1}/{len(teams_data)}: {team['team_name']}")
             
