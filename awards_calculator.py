@@ -24,6 +24,16 @@ class AwardsCalculator:
             or manager_name in self.excluded_manager_names
         )
     
+    def _filter_award_winners(self, winners):
+        """Filter out any winners that belong to excluded teams."""
+        if not winners:
+            return winners
+        filtered = [w for w in winners if not self._is_excluded_team(w)]
+        if len(filtered) != len(winners):
+            removed = [w.get('team_name') for w in winners if self._is_excluded_team(w)]
+            print(f"Excluding teams from awards: {removed}")
+        return filtered
+    
     def calculate_basic_awards(self, teams, gameweek):
         """Calculate basic awards (weekly champion, wooden spoon, performance of the week)."""
         if not teams:
@@ -40,6 +50,7 @@ class AwardsCalculator:
         # Weekly Champion (highest gameweek points)
         max_points = max(team['gw_points'] for team in eligible_teams)
         weekly_champions = [team for team in eligible_teams if team['gw_points'] == max_points]
+        weekly_champions = self._filter_award_winners(weekly_champions)
         awards['weekly_champion'] = [{
             'team_id': champ['team_id'],
             'team_name': champ['team_name'],
@@ -51,6 +62,7 @@ class AwardsCalculator:
         # Wooden Spoon (lowest gameweek points)
         min_points = min(team['gw_points'] for team in eligible_teams)
         wooden_spoons = [team for team in eligible_teams if team['gw_points'] == min_points]
+        wooden_spoons = self._filter_award_winners(wooden_spoons)
         awards['wooden_spoon'] = [{
             'team_id': spoon['team_id'],
             'team_name': spoon['team_name'],
@@ -107,13 +119,19 @@ class AwardsCalculator:
             # If no positive, use the highest (least negative or zero) improvement
             max_improvement = max(imp[1] for imp in improvements)
             champions = [imp for imp in improvements if imp[1] == max_improvement]
+        
+        # Convert champion tuples to team dicts and filter excluded teams
+        champion_teams = [imp[0] for imp in champions]
+        champion_teams = self._filter_award_winners(champion_teams)
+        if not champion_teams:
+            return []
 
         return [{
-            'team_id': champ[0]['team_id'],
-            'team_name': champ[0]['team_name'],
-            'manager_name': champ[0]['manager_name'],
-            'points': champ[1]  # This is the difference
-        } for champ in champions]
+            'team_id': team['team_id'],
+            'team_name': team['team_name'],
+            'manager_name': team['manager_name'],
+            'points': max_improvement  # This is the difference
+        } for team in champion_teams]
     
     def calculate_detailed_awards(self, teams_data, gameweek):
         """Calculate detailed awards (The Wall, Benchwarmer, Captain Fantastic)."""
@@ -180,22 +198,31 @@ class AwardsCalculator:
                 })
                 print(f"  Captain Fantastic: {captain_points['total']} points ({captain_points['details']})")
         
-        # Find winners
+        # Find winners (filter excluded teams BEFORE finding max)
         awards = {}
         if wall_scores:
-            max_wall = max(wall_scores, key=lambda x: x['points'])
-            awards['the_wall'] = [w for w in wall_scores if w['points'] == max_wall['points']]
-            print(f"The Wall winner(s): {[w['team_name'] for w in awards['the_wall']]} with {max_wall['points']} points")
+            filtered_wall = self._filter_award_winners(wall_scores)
+            if filtered_wall:
+                max_wall = max(filtered_wall, key=lambda x: x['points'])
+                winners = [w for w in filtered_wall if w['points'] == max_wall['points']]
+                awards['the_wall'] = winners
+                print(f"The Wall winner(s): {[w['team_name'] for w in awards['the_wall']]} with {max_wall['points']} points")
         
         if benchwarmer_scores:
-            max_bench = max(benchwarmer_scores, key=lambda x: x['points'])
-            awards['benchwarmer'] = [w for w in benchwarmer_scores if w['points'] == max_bench['points']]
-            print(f"Benchwarmer winner(s): {[w['team_name'] for w in awards['benchwarmer']]} with {max_bench['points']} points")
+            filtered_bench = self._filter_award_winners(benchwarmer_scores)
+            if filtered_bench:
+                max_bench = max(filtered_bench, key=lambda x: x['points'])
+                winners = [w for w in filtered_bench if w['points'] == max_bench['points']]
+                awards['benchwarmer'] = winners
+                print(f"Benchwarmer winner(s): {[w['team_name'] for w in awards['benchwarmer']]} with {max_bench['points']} points")
         
         if captain_scores:
-            max_captain = max(captain_scores, key=lambda x: x['points'])
-            awards['captain_fantastic'] = [w for w in captain_scores if w['points'] == max_captain['points']]
-            print(f"Captain Fantastic winner(s): {[w['team_name'] for w in awards['captain_fantastic']]} with {max_captain['points']} points")
+            filtered_captain = self._filter_award_winners(captain_scores)
+            if filtered_captain:
+                max_captain = max(filtered_captain, key=lambda x: x['points'])
+                winners = [w for w in filtered_captain if w['points'] == max_captain['points']]
+                awards['captain_fantastic'] = winners
+                print(f"Captain Fantastic winner(s): {[w['team_name'] for w in awards['captain_fantastic']]} with {max_captain['points']} points")
         
         print(f"Award calculation complete for gameweek {gameweek}")
         return awards
