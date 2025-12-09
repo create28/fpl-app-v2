@@ -47,10 +47,19 @@
     
     /* Ensure award container wraps properly */
     .awards-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 0.25rem !important;
       min-width: 0; /* Allow flex items to shrink if needed */
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    /* Ensure all award badges are visible */
+    .award-badge {
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: inline-flex !important;
     }
     .award-badge:hover {
       transform: scale(1.1);
