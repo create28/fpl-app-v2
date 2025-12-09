@@ -439,52 +439,59 @@ function captureScreenshot(tabType = 'table') {
         captureArea.classList.add('screenshot-mode');
     }
     
-    // Wait for styles and webfonts to apply, then use html-to-image
-    const waitForFonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-    Promise.resolve(waitForFonts).then(() => new Promise(r => setTimeout(r, 200))).then(() => {
-        const pixelRatio = Math.max(window.devicePixelRatio || 1, 2);
-        const width = targetElement.scrollWidth;
-        const height = targetElement.scrollHeight;
-        window.htmlToImage.toPng(targetElement, {
-            pixelRatio,
+    // Create a timeout promise to prevent infinite hanging
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Screenshot operation timed out after 10 seconds')), 10000);
+    });
+
+    // Main screenshot operation
+    const screenshotPromise = (async () => {
+        // Wait for styles and webfonts to apply
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+        
+        // Brief delay to allow layout to settle after class addition
+        await new Promise(r => setTimeout(r, 500));
+        
+        // Use html-to-image
+        // Note: Removing pixelRatio forcing to reduce memory/performance load
+        return window.htmlToImage.toPng(targetElement, {
+            quality: 0.95,
+            backgroundColor: '#ffffff', // Force white background
             cacheBust: true,
-            backgroundColor: null,
-            width,
-            height,
             style: {
                 transform: 'none',
-                filter: 'none'
+                margin: '0',
             }
-        }).then(dataUrl => {
+        });
+    })();
+
+    // Race the screenshot against the timeout
+    Promise.race([screenshotPromise, timeoutPromise])
+        .then(dataUrl => {
             console.log(`${tabType} screenshot captured successfully`);
             
-            // Remove screenshot mode class
-            if (captureArea) {
-                captureArea.classList.remove('screenshot-mode');
-            }
-
             // Create download link
             const link = document.createElement('a');
-            const gameweekSelect = document.getElementById('gameweekSelect');
-            const currentGameweek = gameweekSelect ? gameweekSelect.value : 'unknown';
             link.download = `fpl-${tabType}-gw${currentGameweek}.png`;
             link.href = dataUrl;
             link.click();
-
-            // Restore button
-            screenshotBtn.innerHTML = originalText;
-            screenshotBtn.disabled = false;
-        }).catch(error => {
+        })
+        .catch(error => {
             console.error('Screenshot error:', error);
-            
-            // Remove screenshot mode class on error
+            alert(`Screenshot failed: ${error.message}. Please try again.`);
+        })
+        .finally(() => {
+            // ALWAYS cleanup, regardless of success or failure
+            console.log('Cleaning up screenshot mode...');
             if (captureArea) {
                 captureArea.classList.remove('screenshot-mode');
             }
-
-            // Restore button
-            screenshotBtn.innerHTML = originalText;
-            screenshotBtn.disabled = false;
+            
+            if (screenshotBtn) {
+                screenshotBtn.innerHTML = originalText;
+                screenshotBtn.disabled = false;
+            }
         });
-    });
 }
