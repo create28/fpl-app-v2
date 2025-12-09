@@ -405,17 +405,15 @@ function captureScreenshot(tabType = 'table') {
     let screenshotBtn;
     let targetElement;
     
-    // Determine which button and element to capture based on tab type
+    // Determine which button to use (target is always captureArea now)
+    targetElement = document.getElementById('captureArea');
+    
     if (tabType === 'table') {
         screenshotBtn = document.getElementById('tableScreenshotBtn');
-        targetElement = document.getElementById('tableTabContent');
     } else if (tabType === 'awards') {
         screenshotBtn = document.getElementById('awardsScreenshotBtn');
-        targetElement = document.getElementById('awardsTabContent');
     } else {
-        // Fallback to full capture area
         screenshotBtn = document.getElementById('tableScreenshotBtn');
-        targetElement = captureArea;
     }
     
     if (!targetElement || !screenshotBtn) {

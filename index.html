@@ -229,12 +229,27 @@
     .screenshot-mode .screenshot-title-awards {
       display: block !important;
     }
+
+    /* Hide elements during screenshot */
+    .screenshot-mode .hide-on-screenshot {
+      display: none !important;
+    }
+    
+    /* Ensure background persists in screenshot */
+    .screenshot-mode #captureArea {
+      background: rgba(255, 255, 255, 0.95) !important;
+      box-shadow: none !important;
+      border: none !important;
+      margin: 0 !important;
+      padding: 2rem !important;
+      border-radius: 1rem !important;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
   <div class="container mx-auto px-4 py-8 max-w-7xl">
     <!-- Control Button (Outside Capture Area) -->
-    <div class="mb-6 flex justify-center">
+    <div class="mb-6 flex justify-center hide-on-screenshot">
       <button id="refreshDataBtn" class="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
         <span class="mr-2 text-lg">🔄</span>
         Refresh Data
@@ -257,7 +272,7 @@
       </div>
       
       <!-- Gameweek Selector and Controls -->
-      <div class="mb-8 flex flex-col md:flex-row items-center justify-center gap-4">
+      <div class="mb-8 flex flex-col md:flex-row items-center justify-center gap-4 hide-on-screenshot">
         <select id="gameweekSelect" class="w-full md:w-auto px-6 py-3 border-2 border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-400 bg-white/80 backdrop-blur-sm shadow-lg transition-all duration-300">
           <option value="">Select Gameweek</option>
         </select>
@@ -272,7 +287,7 @@
       </div>
       
       <!-- Tab Navigation -->
-      <div class="mb-8">
+      <div class="mb-8 hide-on-screenshot">
         <div class="flex space-x-1 bg-white/80 backdrop-blur-sm rounded-xl p-1 shadow-lg border border-white/20">
           <button id="tableTab" class="tab-button active flex-1 px-6 py-3 rounded-lg font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
             📊 League Table
@@ -316,7 +331,7 @@
           </div>
           
           <!-- Table Screenshot Button -->
-          <div class="mt-6 text-center">
+          <div class="mt-6 text-center hide-on-screenshot">
             <button id="tableScreenshotBtn" class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-2xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg font-semibold">
               📸 Download Table Screenshot
             </button>
@@ -382,7 +397,7 @@
           </div>
           
           <!-- Awards Screenshot Button -->
-          <div class="mt-8 text-center">
+          <div class="mt-8 text-center hide-on-screenshot">
             <button id="awardsScreenshotBtn" class="px-8 py-4 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-2xl hover:from-slate-800 hover:to-slate-900 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-lg font-semibold">
               📸 Download Awards Screenshot
             </button>
