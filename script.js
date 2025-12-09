@@ -286,6 +286,10 @@ function updateTable(data) {
         // Create awards display
         let awardsHtml = '';
         if (team.awards && team.awards.length > 0) {
+            // Debug logging
+            if (team.awards.length > 1) {
+                console.log(`${team.team_name} has ${team.awards.length} awards:`, team.awards.map(a => a.type));
+            }
             awardsHtml = `
                 <div class="awards-container">
                     ${team.awards.map(award => `
