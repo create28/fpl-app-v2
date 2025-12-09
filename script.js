@@ -343,13 +343,20 @@ function captureScreenshot(tabType = 'table') {
         setTimeout(() => reject(new Error('Screenshot operation timed out after 15 seconds')), 15000);
     });
 
+    // Check for library availability with retry
+    let lib = window.htmlToImage;
+    if (!lib) {
+        // Try to wait a moment if it's still loading
+        await new Promise(r => setTimeout(r, 500));
+        lib = window.htmlToImage;
+    }
+
+    if (!lib) {
+        throw new Error('Screenshot library not loaded. Please refresh the page and try again.');
+    }
+
     // Main screenshot operation
     const screenshotPromise = (async () => {
-        // Check if library is loaded
-        if (!window.htmlToImage) {
-            throw new Error('Screenshot library not loaded');
-        }
-
         // Wait for styles and webfonts to apply
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
@@ -359,7 +366,7 @@ function captureScreenshot(tabType = 'table') {
         await new Promise(r => setTimeout(r, 1000));
         
         // Use html-to-image with simplified settings
-        return window.htmlToImage.toPng(targetElement, {
+        return lib.toPng(targetElement, {
             quality: 0.95,
             backgroundColor: '#ffffff',
             cacheBust: true,
