@@ -287,7 +287,7 @@ function updateTable(data) {
         let awardsHtml = '';
         if (team.awards && team.awards.length > 0) {
             awardsHtml = `
-                <div class="flex flex-wrap gap-1">
+                <div class="awards-container">
                     ${team.awards.map(award => `
                         <span class="award-badge inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${award.color} border shadow-sm" 
                               title="${award.text}">

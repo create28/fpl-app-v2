@@ -35,6 +35,22 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0; /* Prevent badges from shrinking */
+    }
+    
+    /* Ensure awards column shows all badges */
+    #standingsTable td:nth-child(4) {
+      min-width: 200px; /* Minimum width for awards column */
+      max-width: none; /* Allow column to expand */
+      overflow: visible; /* Don't hide overflowing badges */
+    }
+    
+    /* Ensure award container wraps properly */
+    .awards-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      min-width: 0; /* Allow flex items to shrink if needed */
     }
     .award-badge:hover {
       transform: scale(1.1);
@@ -272,7 +288,7 @@
           </div>
           
           <div class="overflow-x-auto rounded-xl shadow-lg">
-            <table id="standingsTable" class="w-full border-collapse bg-white/90 backdrop-blur-sm">
+            <table id="standingsTable" class="w-full border-collapse bg-white/90 backdrop-blur-sm" style="table-layout: auto;">
               <thead>
                 <tr class="bg-gradient-to-r from-indigo-100 to-purple-100">
                   <th class="px-6 py-4 text-left text-sm font-bold text-indigo-800 border-b-2 border-indigo-200">Rank & Change</th>
