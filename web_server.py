@@ -97,18 +97,32 @@ class FPLRequestHandler(BaseHTTPRequestHandler):
                 self.send_json(200, {'gameweeks': gameweeks})
             
             elif path == '/api/current-gameweek':
-                # Get current gameweek with DB fallback when upstream blocks
+                # Get current gameweek with DB fallback/override logic
                 current_gameweek = fpl_api.get_current_gameweek()
                 source = 'api'
+                
+                # Get max available gameweek from DB to prevent showing future empty gameweeks
+                max_db_gameweek = None
+                try:
+                    gameweeks = db_manager.get_available_gameweeks()
+                    if gameweeks:
+                        max_db_gameweek = max(gameweeks)
+                except Exception:
+                    pass
+
+                # If API is ahead of our data, show our latest data
+                if max_db_gameweek is not None:
+                    if current_gameweek is None or current_gameweek > max_db_gameweek:
+                        current_gameweek = max_db_gameweek
+                        source = 'db_latest'
+                
+                # Fallback if everything failed (shouldn't happen if DB has data)
                 if current_gameweek is None:
-                    # Fallback to DB's latest known gameweek
-                    try:
-                        gameweeks = db_manager.get_available_gameweeks()
-                        if gameweeks:
-                            current_gameweek = max(gameweeks)
-                            source = 'db_fallback'
-                    except Exception:
-                        pass
+                    # Final attempt to just use DB max if not already set
+                    if max_db_gameweek is not None:
+                        current_gameweek = max_db_gameweek
+                        source = 'db_fallback'
+                
                 if current_gameweek is None:
                     self.send_json(500, {'status': 'error', 'message': 'Could not determine current gameweek'})
                 else:
