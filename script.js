@@ -62,107 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
             captureScreenshot('awards');
         });
     }
-
-    // Manual refresh functionality
-    const refreshBtn = document.getElementById('refreshDataBtn');
-    const refreshStatus = document.getElementById('refreshStatus');
-    
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async function() {
-            const selectEl = document.getElementById('gameweekSelect');
-            const targetGW = selectEl && selectEl.value ? selectEl.value : null;
-            // Disable button and show loading state
-            refreshBtn.disabled = true;
-            refreshStatus.textContent = 'Refreshing data...';
-            refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
-            
-            try {
-                const url = targetGW ? `${API_BASE_URL}/api/refresh/${targetGW}` : `${API_BASE_URL}/api/refresh-data`;
-                const response = await fetch(url);
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${text}`);
-                }
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    refreshStatus.textContent = result.message;
-                    refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-green-100 text-green-800';
-                    
-                    // Wait a moment then refresh the page to show updated data
-                    setTimeout(() => {
-                        if (targetGW) {
-                            loadGameweekData(targetGW);
-                        } else {
-                            location.reload();
-                        }
-                    }, 2000);
-                } else {
-                    refreshStatus.textContent = result.message;
-                    refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
-                }
-            } catch (error) {
-                refreshStatus.textContent = 'Error: Failed to refresh data';
-                refreshStatus.className = 'ml-4 text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
-                console.error('Refresh error:', error);
-            } finally {
-                // Re-enable button after a delay
-                setTimeout(() => {
-                    refreshBtn.disabled = false;
-                }, 3000);
-            }
-        });
-    }
-
-    // Manual player data fetch functionality
-    const fetchPlayersBtn = document.getElementById('fetchPlayersBtn');
-    const fetchStatus = document.getElementById('fetchStatus');
-    
-    if (fetchPlayersBtn) {
-        fetchPlayersBtn.addEventListener('click', async function() {
-            // Get current gameweek
-            const gameweekSelect = document.getElementById('gameweekSelect');
-            const currentGameweek = gameweekSelect.value;
-            
-            if (!currentGameweek) {
-                fetchStatus.textContent = 'Please select a gameweek first';
-                fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-yellow-100 text-yellow-800';
-                return;
-            }
-            
-            // Disable button and show loading state
-            fetchPlayersBtn.disabled = true;
-            fetchStatus.textContent = 'Fetching player data... This may take a few minutes.';
-            fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-blue-100 text-blue-800';
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/fetch-players/${currentGameweek}`);
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    fetchStatus.textContent = result.message;
-                    fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-green-100 text-green-800';
-                    
-                    // Reload the current gameweek data to show new awards
-                    setTimeout(() => {
-                        loadGameweekData(currentGameweek);
-                    }, 2000);
-                } else {
-                    fetchStatus.textContent = result.message;
-                    fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
-                }
-            } catch (error) {
-                fetchStatus.textContent = 'Error: Failed to fetch player data';
-                fetchStatus.className = 'text-center py-2 px-4 rounded-lg bg-red-100 text-red-800';
-                console.error('Fetch error:', error);
-            } finally {
-                // Re-enable button after a delay
-                setTimeout(() => {
-                    fetchPlayersBtn.disabled = false;
-                }, 5000);
-            }
-        });
-    }
 });
 
 // Initialize gameweek data
@@ -441,28 +340,40 @@ function captureScreenshot(tabType = 'table') {
     
     // Create a timeout promise to prevent infinite hanging
     const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Screenshot operation timed out after 10 seconds')), 10000);
+        setTimeout(() => reject(new Error('Screenshot operation timed out after 15 seconds')), 15000);
     });
 
     // Main screenshot operation
     const screenshotPromise = (async () => {
+        // Check if library is loaded
+        if (!window.htmlToImage) {
+            throw new Error('Screenshot library not loaded');
+        }
+
         // Wait for styles and webfonts to apply
         if (document.fonts && document.fonts.ready) {
             await document.fonts.ready;
         }
         
         // Brief delay to allow layout to settle after class addition
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000));
         
-        // Use html-to-image
-        // Note: Removing pixelRatio forcing to reduce memory/performance load
+        // Use html-to-image with simplified settings
         return window.htmlToImage.toPng(targetElement, {
             quality: 0.95,
-            backgroundColor: '#ffffff', // Force white background
+            backgroundColor: '#ffffff',
             cacheBust: true,
+            skipAutoScale: true, // Prevent scaling issues
             style: {
                 transform: 'none',
-                margin: '0',
+                margin: '0'
+            },
+            filter: (node) => {
+                // Explicitly skip hidden elements to improve performance/stability
+                if (node.classList && node.classList.contains('hide-on-screenshot')) {
+                    return false;
+                }
+                return true;
             }
         });
     })();
