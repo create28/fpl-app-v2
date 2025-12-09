@@ -38,10 +38,11 @@
       flex-shrink: 0; /* Prevent badges from shrinking */
     }
     
-    /* Ensure awards column shows all badges */
+    /* Ensure awards column shows all badges but wraps if too wide */
     #standingsTable td:nth-child(4) {
       min-width: 200px; /* Minimum width for awards column */
-      max-width: none; /* Allow column to expand */
+      max-width: 450px; /* Force wrapping for many awards */
+      white-space: normal; /* Ensure text/content wraps */
       overflow: visible; /* Don't hide overflowing badges */
     }
     
