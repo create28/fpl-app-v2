@@ -366,21 +366,13 @@ function captureScreenshot(tabType = 'table') {
         await new Promise(r => setTimeout(r, 1000));
         
         // Use html-to-image with simplified settings
+        // Relies on CSS classes to hide elements
         return lib.toPng(targetElement, {
             quality: 0.95,
-            backgroundColor: '#ffffff',
             cacheBust: true,
-            skipAutoScale: true, // Prevent scaling issues
+            skipAutoScale: true,
             style: {
                 transform: 'none',
-                margin: '0'
-            },
-            filter: (node) => {
-                // Explicitly skip hidden elements to improve performance/stability
-                if (node.classList && node.classList.contains('hide-on-screenshot')) {
-                    return false;
-                }
-                return true;
             }
         });
     })();
