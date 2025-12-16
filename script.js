@@ -67,8 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize gameweek data
 function initializeGameweekData() {
     const select = document.getElementById('gameweekSelect');
+    const timestamp = new Date().getTime();
+    
     // First load available gameweeks
-    fetch(`${API_BASE_URL}/api/gameweeks`)
+    fetch(`${API_BASE_URL}/api/gameweeks?t=${timestamp}`)
         .then(r => r.json())
         .then(data => {
             const gameweeks = Array.isArray(data.gameweeks) ? data.gameweeks : [];
@@ -83,7 +85,7 @@ function initializeGameweekData() {
             }
 
             // Try to get current gameweek; fallback to highest available
-            return fetch(`${API_BASE_URL}/api/current-gameweek`)
+            return fetch(`${API_BASE_URL}/api/current-gameweek?t=${timestamp}`)
                 .then(r => r.ok ? r.json() : Promise.reject())
                 .then(d => ({ current: d.current_gameweek, gameweeks }))
                 .catch(() => ({ current: (gameweeks.length ? Math.max(...gameweeks) : null), gameweeks }));
@@ -101,7 +103,9 @@ function initializeGameweekData() {
 // Load gameweek data
 function loadGameweekData(gameweek) {
     console.log('Loading data for gameweek:', gameweek);
-    fetch(`${API_BASE_URL}/api/data/${gameweek}`)
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    fetch(`${API_BASE_URL}/api/data/${gameweek}?t=${timestamp}`)
         .then(response => response.json())
         .then(data => {
             console.log('Received data:', data);
