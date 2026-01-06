@@ -233,6 +233,13 @@
         "player_name": "Gabriel"
       }
     ],
-    "performance_of_week": []
+    "performance_of_week": [
+      {
+        "team_id": 2377830,
+        "team_name": "Grishy Bears",
+        "manager_name": "Lars L\u00e6rum",
+        "points": 46
+      }
+    ]
   }
 }

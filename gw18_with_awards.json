@@ -252,6 +252,13 @@
         "player_name": "Andersen"
       }
     ],
-    "performance_of_week": []
+    "performance_of_week": [
+      {
+        "team_id": 9409322,
+        "team_name": "The Frequency FC",
+        "manager_name": "Kenneth Aastr\u00f8m",
+        "points": -2
+      }
+    ]
   }
 }

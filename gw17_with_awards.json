@@ -268,6 +268,13 @@
         "player_name": "Haaland"
       }
     ],
-    "performance_of_week": []
+    "performance_of_week": [
+      {
+        "team_id": 1695277,
+        "team_name": "COYSnorre",
+        "manager_name": "Snorre Olimstad",
+        "points": 43
+      }
+    ]
   }
 }

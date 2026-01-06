@@ -236,6 +236,13 @@
         "player_name": "Andersen"
       }
     ],
-    "performance_of_week": []
+    "performance_of_week": [
+      {
+        "team_id": 9230228,
+        "team_name": "Hot Dog 9",
+        "manager_name": "\u00d8yvind Strand",
+        "points": 24
+      }
+    ]
   }
 }
