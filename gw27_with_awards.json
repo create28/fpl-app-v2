@@ -1,0 +1,287 @@
+{
+    "gameweek": 27,
+    "standings": [
+        {
+            "team_id": 33963,
+            "team_name": "Gianfranco's Zalo",
+            "manager_name": "Erlend Ryvold Ski",
+            "gw_points": 38,
+            "total_points": 1499,
+            "team_value": 1018.0,
+            "bank_balance": 8.0
+        },
+        {
+            "team_id": 1168350,
+            "team_name": "Berit FC",
+            "manager_name": "Marianne Heggenhougen",
+            "gw_points": 42,
+            "total_points": 1496,
+            "team_value": 1046.0,
+            "bank_balance": 34.0
+        },
+        {
+            "team_id": 1519903,
+            "team_name": "Raabye United",
+            "manager_name": "Torstein Raabye Haugen",
+            "gw_points": 44,
+            "total_points": 1519,
+            "team_value": 1047.0,
+            "bank_balance": 12.0
+        },
+        {
+            "team_id": 1695277,
+            "team_name": "COYSnorre",
+            "manager_name": "Snorre Olimstad",
+            "gw_points": 43,
+            "total_points": 1491,
+            "team_value": 1016.0,
+            "bank_balance": 0.0
+        },
+        {
+            "team_id": 2377830,
+            "team_name": "Grishy Bears",
+            "manager_name": "Lars L\u00e6rum",
+            "gw_points": 49,
+            "total_points": 1619,
+            "team_value": 1031.0,
+            "bank_balance": 13.0
+        },
+        {
+            "team_id": 3211637,
+            "team_name": "Kibjo",
+            "manager_name": "Anne Sofie Bj\u00f8rnebye",
+            "gw_points": 47,
+            "total_points": 1423,
+            "team_value": 1011.0,
+            "bank_balance": 9.0
+        },
+        {
+            "team_id": 3992229,
+            "team_name": "The highs and Dalots",
+            "manager_name": "Chris Milne",
+            "gw_points": 50,
+            "total_points": 1431,
+            "team_value": 1029.0,
+            "bank_balance": 0.0
+        },
+        {
+            "team_id": 5696589,
+            "team_name": "mkdons",
+            "manager_name": "DagOtto Christensen",
+            "gw_points": 53,
+            "total_points": 1450,
+            "team_value": 1000.0,
+            "bank_balance": 17.0
+        },
+        {
+            "team_id": 5729443,
+            "team_name": "T\u00f8yse/Sprint",
+            "manager_name": "\u00d8rjan Laxaa",
+            "gw_points": 46,
+            "total_points": 1461,
+            "team_value": 1026.0,
+            "bank_balance": 37.0
+        },
+        {
+            "team_id": 7535279,
+            "team_name": "DH-To-The-Moon",
+            "manager_name": "Daan Hekking",
+            "gw_points": 39,
+            "total_points": 1483,
+            "team_value": 1023.0,
+            "bank_balance": 4.0
+        },
+        {
+            "team_id": 7695618,
+            "team_name": "Holdhus IL",
+            "manager_name": "Liv Ragnhild Sjursen",
+            "gw_points": 66,
+            "total_points": 1410,
+            "team_value": 990.0,
+            "bank_balance": 0.0
+        },
+        {
+            "team_id": 8726629,
+            "team_name": "Goal Diggers",
+            "manager_name": "Vemund Fjeld",
+            "gw_points": 29,
+            "total_points": 1447,
+            "team_value": 1002.0,
+            "bank_balance": 1.0
+        },
+        {
+            "team_id": 8870107,
+            "team_name": "Sheitlingthorp FC",
+            "manager_name": "Tarjei \u00d8deg\u00e5rd",
+            "gw_points": 46,
+            "total_points": 1508,
+            "team_value": 1010.0,
+            "bank_balance": 16.0
+        },
+        {
+            "team_id": 9087417,
+            "team_name": "chris forced me",
+            "manager_name": "Tone Walseng",
+            "gw_points": 38,
+            "total_points": 1545,
+            "team_value": 1021.0,
+            "bank_balance": 12.0
+        },
+        {
+            "team_id": 9154732,
+            "team_name": "Santa Yofre",
+            "manager_name": "Petto Cantarutti",
+            "gw_points": 42,
+            "total_points": 1664,
+            "team_value": 1044.0,
+            "bank_balance": 7.0
+        },
+        {
+            "team_id": 9230228,
+            "team_name": "Hot Dog 9",
+            "manager_name": "\u00d8yvind Strand",
+            "gw_points": 47,
+            "total_points": 1544,
+            "team_value": 1013.0,
+            "bank_balance": 6.0
+        },
+        {
+            "team_id": 9409322,
+            "team_name": "The Frequency FC",
+            "manager_name": "Kenneth Aastr\u00f8m",
+            "gw_points": 70,
+            "total_points": 1496,
+            "team_value": 1028.0,
+            "bank_balance": 6.0
+        },
+        {
+            "team_id": 9415558,
+            "team_name": "Phoenix",
+            "manager_name": "Rui Martins",
+            "gw_points": 66,
+            "total_points": 1360,
+            "team_value": 1003.0,
+            "bank_balance": 2.0
+        },
+        {
+            "team_id": 12480627,
+            "team_name": "AI Chris",
+            "manager_name": "Chris Milne",
+            "gw_points": 30,
+            "total_points": 764,
+            "team_value": 1019.0,
+            "bank_balance": 2.0
+        },
+        {
+            "team_id": 12480987,
+            "team_name": "AI-DH-To-The-Moon",
+            "manager_name": "AI-Daan Hekking",
+            "gw_points": 63,
+            "total_points": 896,
+            "team_value": 992.0,
+            "bank_balance": 2.0
+        },
+        {
+            "team_id": 12511961,
+            "team_name": "The VibeKIngs",
+            "manager_name": "Erlend Ryvold Ski",
+            "gw_points": 25,
+            "total_points": 844,
+            "team_value": 1029.0,
+            "bank_balance": 12.0
+        }
+    ],
+    "awards": {
+        "weekly_champion": [
+            {
+                "team_id": 9409322,
+                "team_name": "The Frequency FC",
+                "manager_name": "Kenneth Aastr\u00f8m",
+                "points": 70
+            }
+        ],
+        "wooden_spoon": [
+            {
+                "team_id": 8726629,
+                "team_name": "Goal Diggers",
+                "manager_name": "Vemund Fjeld",
+                "points": 29
+            }
+        ],
+        "the_wall": [
+            {
+                "team_id": 9409322,
+                "team_name": "The Frequency FC",
+                "manager_name": "Kenneth Aastr\u00f8m",
+                "points": 18,
+                "details": "GKP+DEF: DEF:2, GKP:16 (1 GKP, 1 DEF)"
+            }
+        ],
+        "benchwarmer": [
+            {
+                "team_id": 9087417,
+                "team_name": "chris forced me",
+                "manager_name": "Tone Walseng",
+                "points": 20,
+                "details": "Bench: B15:2, B14:1, B13:8, B12:9 (4 players)"
+            },
+            {
+                "team_id": 9230228,
+                "team_name": "Hot Dog 9",
+                "manager_name": "\u00d8yvind Strand",
+                "points": 20,
+                "details": "Bench: B14:2, B13:2, B12:16, B15:0 (4 players)"
+            }
+        ],
+        "captain_fantastic": [
+            {
+                "team_id": 1168350,
+                "team_name": "Berit FC",
+                "manager_name": "Marianne Heggenhougen",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            },
+            {
+                "team_id": 2377830,
+                "team_name": "Grishy Bears",
+                "manager_name": "Lars L\u00e6rum",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            },
+            {
+                "team_id": 3992229,
+                "team_name": "The highs and Dalots",
+                "manager_name": "Chris Milne",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            },
+            {
+                "team_id": 5729443,
+                "team_name": "T\u00f8yse/Sprint",
+                "manager_name": "\u00d8rjan Laxaa",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            },
+            {
+                "team_id": 8870107,
+                "team_name": "Sheitlingthorp FC",
+                "manager_name": "Tarjei \u00d8deg\u00e5rd",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            },
+            {
+                "team_id": 9154732,
+                "team_name": "Santa Yofre",
+                "manager_name": "Petto Cantarutti",
+                "points": 7,
+                "details": "Captain: Player_249 scored 7 points (non-captain: 3.5)",
+                "player_name": "Player_249"
+            }
+        ]
+    }
+}
